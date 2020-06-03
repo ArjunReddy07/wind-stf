@@ -1,5 +1,4 @@
 library(beepr)
-library(usethis)
 
 library(data.table)
 
@@ -180,9 +179,6 @@ colnames(distances.nuts3.centroids) <- geodata.districts.producing$NUTS_ID
 # upper.tri(x, diag = FALSE)
 
 # Empirical CDF for the different regional power outputs @2015
-ecdf()
+# ecdf()
 
-beep(sound=4)
-
-gh::gh_whoami()
-
+beepr::beep(sound=4)
