@@ -184,4 +184,5 @@ ecdf()
 
 beep(sound=4)
 
+gh::gh_whoami()
 
