@@ -13,6 +13,7 @@ library(tmap)    # for static and interactive maps
 # library(leaflet) # for interactive maps
 # library(mapview) # for interactive maps
 library(ggplot2) # tidyverse data visualization package
+library(plotly)
 #library(shiny)   # for web applications
 library(tmaptools)
 
@@ -97,6 +98,7 @@ get_installed_power <- function(turbines.ids){
 }
 
 geodata_de$power.installed <- unlist(lapply(geodata_de$turbines.ids, get_installed_power))
+geodata_de[which(geodata_de$power.installed>0),]
 
 # map
 power.installed.map <- tm_shape(geodata_de, xlim=c(10.458-5,10.458+5)) + tm_borders(col="#223949") + tm_fill(col="power.installed", breaks=c(0, 0, 1e+03, 3e+03, 1e+04, 3e+04, 1e+05, 3e+05, 1.1e+06), legend.format = c(scientific=TRUE), palette = get_brewer_pal("Blues", contrast = c(0, 1))) +
@@ -130,6 +132,7 @@ ggsave(turbines.count.cumsum, filename="../08_reporting/turbine-cumulative-count
 # Turbine ages: NUTS3 aggregated
 turbines.nuts3aggregation <- aggregate(turbines.metadata, by=list(turbines.metadata$NUTS_ID), list)
 rownames(turbines.nuts3aggregation) <- turbines.nuts3aggregation$Group.1
+
 
 turbines.nuts3.count.cumsum.plot <- ggplot(turbines.nuts3aggregation, aes(x=dt)) + stat_bin(aes(y=cumsum(..count..), geom="step")) + geom_vline(xintercept=as.Date("2010-09-28"), col="red")
 ggsave(turbines.nuts3.count.cumsum.plot, filename="../08_reporting/turbine-cumulative-count-nuts3.png", dpi=200)
@@ -172,13 +175,63 @@ rownames(distances.nuts3) <- geodata.districts.producing$NUTS_ID
 colnames(distances.nuts3) <- geodata.districts.producing$NUTS_ID
 
 geodata.districts.producing.centroids <- st_centroid(geodata.districts.producing)
+rownames(geodata.districts.producing.centroids) <- geodata.districts.producing$NUTS_ID
+
 distances.nuts3.centroids <- st_distance(geodata.districts.producing.centroids)
 rownames(distances.nuts3.centroids) <- geodata.districts.producing$NUTS_ID
 colnames(distances.nuts3.centroids) <- geodata.districts.producing$NUTS_ID
 
-# upper.tri(x, diag = FALSE)
+upper.tri(x, diag = FALSE)
 
-# Empirical CDF for the different regional power outputs @2015
-# ecdf()
+minmaxscale <- function(x){
+  return ((x-min(x))/(max(x)-min(x)))
+}
+
+power.generated.normalized <- data.frame(lapply(power.generated, FUN=minmaxscale))
+
+# Power Generation: overlay of density plots, colored by (district centroid) latitude
+
+colnames(power.generated.normalized)
+data<- melt(power.generated.normalized)
+ggplot(data, aes(x=value, fill=variable)) + geom_density(alpha=0.1) + theme(legend.position = "none")
+
+centroids_coords <- st_coordinates(geodata.districts.producing.centroids)
+rownames(centroids_coords) <- rownames(geodata.districts.producing.centroids)
+colnames(centroids_coords) <- c("lat", "lon")
+
+get_lat <- function(nuts_id){
+  lat <- centroids_coords[nuts_id, "lat"]
+  return(lat)
+}
+
+get_age <- function(nuts_id){
+  age <- turbines.nuts3aggregation$age.median
+  return(dt)
+}
+
+# Hypothesis: densities get sharper as latitude increases: mostly WEAK evidence
+data <- stack(power.generated.normalized[, geodata_de[which(geodata_de$turbine.counts>50), ]$NUTS_ID])
+p <- ggplot(data, aes(x = values, ..scaled..)) +
+  stat_density(aes(group = ind, color = get_lat(ind), alpha=0.5),position="identity",geom="line", trim=TRUE)
+fig <- ggplotly(p)
+fig
+
+# Hypothesis: densities get sharper for newer turbines
+data <- stack(power.generated.normalized[, geodata_de[which(geodata_de$turbine.counts>50), ]$NUTS_ID])
+p <- ggplot(data, aes(x = values, ..scaled..)) +
+  stat_density(aes(group = ind, color = get_dt(ind), alpha=0.5),position="identity",geom="line", trim=TRUE)
+fig <- ggplotly(p)
+fig
+
+power.generated.density <- ggplot(power.generated.normalized) + geom_density(aes(x=DE218)) + scale_x_log10()
+power.generated.density
+
+power.generated.ecdf <- ggplot(power.generated.normalized, aes(DE218)) + stat_ecdf(geom = "point")
+power.generated.ecdf
+
+# TODO: why districts in power.generated not all in geodata_de districts with power.installed>0? Hypotheses: (1) geodata_de, power.generated with different NUTS3 definition
+colnames(power.generated) %in% geodata_de[which(geodata_de$power.installed>0),]$NUTS_ID
+
 
 beepr::beep(sound=4)
+
