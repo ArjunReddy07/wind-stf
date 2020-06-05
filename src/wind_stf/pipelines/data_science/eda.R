@@ -57,7 +57,7 @@ turbines.metadata <- st_as_sf(
   crs=st_crs(geodata_de))
 turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%M.%Y"))  # commissioning date column to standtard datetime format
 turbines.metadata <- turbines.metadata[which(turbines.metadata$dt < "2015-12-31"),]          # only consider turbines commissioned before 2015-12-31
-
+turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
 # ===========================================
 # Plotting
 # ===========================================
@@ -92,10 +92,10 @@ turbine.counts.density <- ggplot(geodata_de) + geom_density(aes(x=turbine.counts
 ggsave(turbine.counts.density, filename="../08_reporting/turbine-counts-density-plot.png", dpi=200)
 
 # Rated Power: NUTS 3 aggregation @DEC 2015
-get_installed_power <- function(turbines.ids){
-  power.rated <- turbines.metadata[turbines.metadata$id %in% unlist(turbines.ids), ]$power
-  return(sum(power.rated))
-}
+# get_installed_power <- function(turbines.ids){
+#   power.rated <- turbines.metadata[turbines.metadata$id %in% unlist(turbines.ids), ]$power
+#  return(sum(power.rated))
+#}
 
 geodata_de$power.installed <- unlist(lapply(geodata_de$turbines.ids, get_installed_power))
 geodata_de[which(geodata_de$power.installed>0),]
@@ -153,12 +153,11 @@ file.paths <- paste("./power-generation/", file.names, sep="")
 power.generated <- do.call(rbind, lapply(file.paths,read.csv))
 
 power.generated <- read.csv("./power-generation/wpinfeed_inkW_nuts3_2015_utc.csv")  # TODO: drop district which not in geodata_de$NUTS_ID
-power.generated$X <- ymd_hms(power.generated$X)
+power.generated$X <- ymd_hms(power.generated$X, tz="UTC")
 rownames(power.generated) <- power.generated$X
-power.generated.ts <- xts(power.generated, order.by = power.generated$X)
-
 power.generated <- select(power.generated, -X)
 
+power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
 
 plot.ts(power.generated.ts[, c("DE145", "DE141", "DEF07")])
 ts_seasonal(power.generated.ts[,"DE145"], type="normal")
@@ -223,6 +222,8 @@ p <- ggplot(data, aes(x = values, ..scaled..)) +
 fig <- ggplotly(p)
 fig
 
+htmlwidgets::saveWidget(as_widget(fig), "density_power.html")
+
 power.generated.density <- ggplot(power.generated.normalized) + geom_density(aes(x=DE218)) + scale_x_log10()
 power.generated.density
 
@@ -232,6 +233,23 @@ power.generated.ecdf
 # TODO: why districts in power.generated not all in geodata_de districts with power.installed>0? Hypotheses: (1) geodata_de, power.generated with different NUTS3 definition
 colnames(power.generated) %in% geodata_de[which(geodata_de$power.installed>0),]$NUTS_ID
 
+# TODO: calculate (1) installed power over time; (2) CFs
+get_installed_power <- function(nuts_id){
+   installed.capacity <- data.table(turbines.metadata) %>%
+     .[which(turbines.metadata$NUTS_ID==nuts_id), c("NUTS_ID", "dt", "power")] %>%
+     arrange(., dt) %>%
+     aggregate(power ~ dt, data=., FUN=sum)
+
+   installed.capacity.xts <- xts(installed.capacity, order.by=ymd(installed.capacity$dt)) %>%
+     .$power
+
+   storage.mode(installed.capacity.xts) <- "double"
+   index(installed.capacity.xts) <- index(installed.capacity.xts) + hours(12)  # consider commissioning times as always being at noontime
+   colnames(installed.capacity.xts) <- nuts_id
+   return(installed.capacity.xts)
+}
+
+cf <- power.generated.xts$DE145/get_installed_power("DE145")
 
 beepr::beep(sound=4)
 
