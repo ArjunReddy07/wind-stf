@@ -235,21 +235,32 @@ colnames(power.generated) %in% geodata_de[which(geodata_de$power.installed>0),]$
 
 # TODO: calculate (1) installed power over time; (2) CFs
 get_installed_power <- function(nuts_id){
-   installed.capacity <- data.table(turbines.metadata) %>%
+   new.commissionings <- data.table(turbines.metadata) %>%
      .[which(turbines.metadata$NUTS_ID==nuts_id), c("NUTS_ID", "dt", "power")] %>%
-     arrange(., dt) %>%
-     aggregate(power ~ dt, data=., FUN=sum)
+     arrange(., dt)
 
-   installed.capacity.xts <- xts(installed.capacity, order.by=ymd(installed.capacity$dt)) %>%
+   capacity.installed <- new.commissionings
+   capacity.installed$power <- cumsum(new.commissionings$power)
+   capacity.installed.xts <- xts(capacity.installed, order.by=ymd(capacity.installed$dt)) %>%
      .$power
 
-   storage.mode(installed.capacity.xts) <- "double"
-   index(installed.capacity.xts) <- index(installed.capacity.xts) + hours(12)  # consider commissioning times as always being at noontime
-   colnames(installed.capacity.xts) <- nuts_id
-   return(installed.capacity.xts)
+   storage.mode(capacity.installed.xts) <- "double"
+   index(capacity.installed.xts) <- index(capacity.installed.xts) + hours(12)  # consider commissioning times as always being at noontime
+   colnames(capacity.installed.xts) <- nuts_id
+
+   # unit test
+   # assertive.base::are_identical(sum(new.commissionings$power), max(capacity.installed$power))
+   # assertive.properties::is_monotonic_increasing(capacity.installed$power)
+
+   return(capacity.installed.xts)
 }
 
-cf <- power.generated.xts$DE145/get_installed_power("DE145")
+capacity.installed.xts <- get_installed_power(nuts_id)
+cf <- xts(x=NULL, seq(from=start(capacity.installed.xts), to=end(power.generated.xts), by="hour")) %>%
+  merge.xts(., capacity.installed.xts, fill=na.locf) %>%
+  .["20150101/20151231"]
 
+power.generated.xts$DEF0C/get_installed_power("DEF0C")
+to.period
 beepr::beep(sound=4)
 
