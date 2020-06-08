@@ -58,6 +58,20 @@ turbines.metadata <- st_as_sf(
 turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%M.%Y"))  # commissioning date column to standtard datetime format
 turbines.metadata <- turbines.metadata[which(turbines.metadata$dt < "2015-12-31"),]          # only consider turbines commissioned before 2015-12-31
 turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
+
+# Load power generation data
+# TODO: drop observations after 2015
+file.names <- dir("./power-generation/")
+file.paths <- paste("./power-generation/", file.names, sep="")
+power.generated <- do.call(rbind, lapply(file.paths,read.csv))
+
+power.generated <- read.csv("./power-generation/wpinfeed_inkW_nuts3_2015_utc.csv")  # TODO: drop district which not in geodata_de$NUTS_ID
+power.generated$X <- ymd_hms(power.generated$X, tz="UTC")
+rownames(power.generated) <- power.generated$X
+power.generated <- select(power.generated, -X)
+
+power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
+
 # ===========================================
 # Plotting
 # ===========================================
@@ -147,17 +161,6 @@ ages.nuts3.map <- tm_shape(geodata_de, xlim=c(10.458-5,10.458+5)) + tm_borders(c
 ages.nuts3.map
 tmap_save(ages.nuts3.map, filename="../08_reporting/ages-nuts3-map.png", dpi=600, outer.margins = c(0,0,0,0))
 
-# Power generation: district DE141  # TODO: drop observations after 2015
-file.names <- dir("./power-generation/")
-file.paths <- paste("./power-generation/", file.names, sep="")
-power.generated <- do.call(rbind, lapply(file.paths,read.csv))
-
-power.generated <- read.csv("./power-generation/wpinfeed_inkW_nuts3_2015_utc.csv")  # TODO: drop district which not in geodata_de$NUTS_ID
-power.generated$X <- ymd_hms(power.generated$X, tz="UTC")
-rownames(power.generated) <- power.generated$X
-power.generated <- select(power.generated, -X)
-
-power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
 
 plot.ts(power.generated.ts[, c("DE145", "DE141", "DEF07")])
 ts_seasonal(power.generated.ts[,"DE145"], type="normal")
@@ -234,33 +237,37 @@ power.generated.ecdf
 colnames(power.generated) %in% geodata_de[which(geodata_de$power.installed>0),]$NUTS_ID
 
 # TODO: calculate (1) installed power over time; (2) CFs
-get_installed_power <- function(nuts_id){
-   new.commissionings <- data.table(turbines.metadata) %>%
-     .[which(turbines.metadata$NUTS_ID==nuts_id), c("NUTS_ID", "dt", "power")] %>%
-     arrange(., dt)
+get_new_commisionings <- function(nuts_id){
+  new.commissionings <- data.table(turbines.metadata) %>%
+    .[which(turbines.metadata$NUTS_ID==nuts_id), c("NUTS_ID", "dt", "power")] %>%
+    arrange(., dt)
+  return(new.commissionings)
+}
 
-   capacity.installed <- new.commissionings
-   capacity.installed$power <- cumsum(new.commissionings$power)
-   capacity.installed.xts <- xts(capacity.installed, order.by=ymd(capacity.installed$dt)) %>%
-     .$power
+get_installed_power <- function(nuts_id){
+  new.commissionings <- get_new_commisionings(nuts_id)
+  capacity.installed <- new.commissionings
+  capacity.installed$power <- cumsum(new.commissionings$power)
+  capacity.installed.xts <- xts(capacity.installed, order.by=ymd(capacity.installed$dt)) %>%
+   .$power
 
    storage.mode(capacity.installed.xts) <- "double"
-   index(capacity.installed.xts) <- index(capacity.installed.xts) + hours(12)  # consider commissioning times as always being at noontime
+   index(capacity.installed.xts) <- index(capacity.installed.xts) + hours(6)  # consider commissioning times as always being at noontime
    colnames(capacity.installed.xts) <- nuts_id
 
-   # unit test
+   # unit test get_installed_power
    # assertive.base::are_identical(sum(new.commissionings$power), max(capacity.installed$power))
    # assertive.properties::is_monotonic_increasing(capacity.installed$power)
-
    return(capacity.installed.xts)
 }
 
+nuts_id <- "DEF0C"
 capacity.installed.xts <- get_installed_power(nuts_id)
 cf <- xts(x=NULL, seq(from=start(capacity.installed.xts), to=end(power.generated.xts), by="hour")) %>%
   merge.xts(., capacity.installed.xts, fill=na.locf) %>%
   .["20150101/20151231"]
 
-power.generated.xts$DEF0C/get_installed_power("DEF0C")
+power.generated.xts$DEF0C/cf("DEF0C")
 to.period
 beepr::beep(sound=4)
 
