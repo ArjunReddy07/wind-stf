@@ -236,23 +236,27 @@ power.generated.ecdf
 # TODO: why districts in power.generated not all in geodata_de districts with power.installed>0? Hypotheses: (1) geodata_de, power.generated with different NUTS3 definition
 colnames(power.generated) %in% geodata_de[which(geodata_de$power.installed>0),]$NUTS_ID
 
-# TODO: calculate (1) installed power over time; (2) CFs
 get_new_commisionings <- function(nuts_id){
   new.commissionings <- data.table(turbines.metadata) %>%
     .[which(turbines.metadata$NUTS_ID==nuts_id), c("NUTS_ID", "dt", "power")] %>%
     arrange(., dt)
+  new.commissionings <- select(new.commissionings, -NUTS_ID)
   return(new.commissionings)
 }
 
+aggregate_sameday_commissionings <- function(nuts_id){
+  new.commissionings.aggregated <-aggregate(power~dt, data=get_new_commisionings(nuts_id), sum)
+  return(new.commissionings.aggregated)
+}
+
 get_installed_power <- function(nuts_id){
-  new.commissionings <- get_new_commisionings(nuts_id)
-  capacity.installed <- new.commissionings
-  capacity.installed$power <- cumsum(new.commissionings$power)
+  capacity.installed <- aggregate_sameday_commissionings(nuts_id)
+  capacity.installed$power <- cumsum(new.commissionings.aggregated$power)
   capacity.installed.xts <- xts(capacity.installed, order.by=ymd(capacity.installed$dt)) %>%
    .$power
 
    storage.mode(capacity.installed.xts) <- "double"
-   index(capacity.installed.xts) <- index(capacity.installed.xts) + hours(6)  # consider commissioning times as always being at noontime
+   index(capacity.installed.xts) <- index(capacity.installed.xts) + seconds(1)  # consider commissioning times as always being at 00:00:01
    colnames(capacity.installed.xts) <- nuts_id
 
    # unit test get_installed_power
@@ -261,13 +265,28 @@ get_installed_power <- function(nuts_id){
    return(capacity.installed.xts)
 }
 
-nuts_id <- "DEF0C"
-capacity.installed.xts <- get_installed_power(nuts_id)
-cf <- xts(x=NULL, seq(from=start(capacity.installed.xts), to=end(power.generated.xts), by="hour")) %>%
-  merge.xts(., capacity.installed.xts, fill=na.locf) %>%
-  .["20150101/20151231"]
+get_capacity_factor <- function(nuts_id){
+  capacity.installed.xts <- get_installed_power(nuts_id)
 
-power.generated.xts$DEF0C/cf("DEF0C")
-to.period
+  blank.xts <- xts(x=NULL,
+                   seq(from=start(capacity.installed.xts),
+                       to=end(power.generated.xts),
+                       by="hour"))
+
+  capacity.installed.xts <- merge.xts(blank.xts,
+                                      capacity.installed.xts,
+                                      fill=na.locf)
+  capacity.installed.xts <- capacity.installed.xts["20150101/20151231"]
+
+  cf <- power.generated.xts$DEF0C/capacity.installed.xts
+  return(cf)
+}
+
+# TODO: calculate all CFs and put them into single data.table / xts
+get_all_capacity_factors <- function(){
+  apply(power.generated.xts, MARGIN=1, FUN=get_capacity_factor)
+}
+
+
 beepr::beep(sound=4)
 
