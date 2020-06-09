@@ -73,170 +73,12 @@ power.generated <- select(power.generated, -X)
 power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
 
 # ===========================================
-# Plotting
+# Preprocessing
 # ===========================================
-
-# NUTS3
-nuts3map <-  tm_shape(geodata_de, xlim=c(10.458-5,10.458+5)) + tm_fill(col="#223949") + tm_borders(col="#304A5C") +
-  tm_shape(geodata_eu, xlim=c(10.458-6,10.458+6)) + tm_fill(col="#09101D") +
-  tm_layout(bg.color = "#12232f", inner.margins = c(0, .02, .02, .02))
-tmap_save(nuts3map, filename="../08_reporting/districts-map.png", dpi=600, outer.margins = c(0,0,0,0))
-
-# Turbine locations: map
-turbines.locations <- tm_shape(geodata_de, xlim=c(10.458-5,10.458+5)) + tm_fill(col="#223949") + tm_borders(col="#223949") +
-  tm_shape(geodata_eu, xlim=c(10.458-5,10.458+5)) + tm_fill(col="#09101D") + tm_borders(col="#09101D") +
-  tm_shape(turbines.metadata) + tm_dots(col="#dbe2e6") +
-  tm_layout(bg.color = "#12232f", inner.margins = c(0, .02, .02, .02))
-  # tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.7, position = c("left", "bottom"))
-tmap_save(turbines.locations, filename="../08_reporting/turbines-locations-map.png", dpi=600, outer.margins = c(0,0,0,0))
-
-# Turbine counts: NUTS3 aggregation map
-turbines.nuts3aggregation <- st_contains(geodata_de, turbines.metadata)
-geodata_de$turbine.counts <- unlist(lapply(turbines.nuts3aggregation, length))
-geodata_de$turbines.ids <- lapply(turbines.nuts3aggregation, unlist)
-
-turbine.counts.map <-  tm_shape(geodata_de, xlim=c(10.458-5,10.458+5)) + tm_borders(col="#223949") + tm_fill(col="turbine.counts", breaks=c(0, 1, 10, 30, 100, 300, 762) , palette = get_brewer_pal("Blues", n = 6, contrast = c(0, 1))) +
-  tm_shape(geodata_eu, xlim=c(10.458-6,10.458+6)) + tm_fill(col="#09101D") +
-  tm_layout(bg.color = "#12232f", inner.margins = c(0, .02, .02, .02), legend.text.color = "#f5fafa", legend.title.color="#f5fafa", legend.position = c("left", "top"))
-turbine.counts.map
-tmap_save(turbine.counts.map, filename="../08_reporting/turbine-counts-map.png", dpi=600, outer.margins = c(0,0,0,0))
-
-# Turbine counts: density
-turbine.counts.density <- ggplot(geodata_de) + geom_density(aes(x=turbine.counts)) + scale_x_log10()
-ggsave(turbine.counts.density, filename="../08_reporting/turbine-counts-density-plot.png", dpi=200)
-
-# Rated Power: NUTS 3 aggregation @DEC 2015
-# get_installed_power <- function(turbines.ids){
-#   power.rated <- turbines.metadata[turbines.metadata$id %in% unlist(turbines.ids), ]$power
-#  return(sum(power.rated))
-#}
-
-geodata_de$power.installed <- unlist(lapply(geodata_de$turbines.ids, get_installed_power))
-geodata_de[which(geodata_de$power.installed>0),]
-
-# map
-power.installed.map <- tm_shape(geodata_de, xlim=c(10.458-5,10.458+5)) + tm_borders(col="#223949") + tm_fill(col="power.installed", breaks=c(0, 0, 1e+03, 3e+03, 1e+04, 3e+04, 1e+05, 3e+05, 1.1e+06), legend.format = c(scientific=TRUE), palette = get_brewer_pal("Blues", contrast = c(0, 1))) +
-  tm_shape(geodata_eu, xlim=c(10.458-6,10.458+6)) + tm_fill(col="#09101D") +
-  tm_layout(bg.color = "#12232f", inner.margins = c(0, .02, .02, .02), legend.text.color = "#f5fafa", legend.title.color="#f5fafa", legend.position = c("left", "top"))
-power.installed.map
-tmap_save(power.installed.map, filename="../08_reporting/power-installed-map.png", dpi=600, outer.margins = c(0,0,0,0))
-
-# density
-power.installed.density <- ggplot(geodata_de) + geom_density(aes(x=power.installed)) + scale_x_log10()
-ggsave(power.installed.density, filename="../08_reporting/power-installed-density-plot.png", dpi=200)
-
-# Turbine ages: map
-turbines.ages.map <- tm_shape(geodata_de, xlim=c(10.458-5,10.458+5)) + tm_fill(col="#223949") +
-  tm_shape(geodata_eu, xlim=c(10.458-6,10.458+6)) + tm_fill(col="#09101D") +
-  tm_shape(turbines.metadata) + tm_dots(col="dt", title="Commisioning Date", style="quantile", palette = viridisLite::inferno(6)) +
-  tm_layout(bg.color = "#12232f", inner.margins = c(0, .02, .02, .02), legend.text.color = "#f5fafa", legend.title.color="#f5fafa",) + tmap_options(max.categories = 6)
-tmap_save(turbines.ages.map, filename="../08_reporting/turbine-ages-map.png", dpi=600, outer.margins = c(0,0,0,0))
-
-# Turbine ages: density
-turbines.ages.density <- ggplot(turbines.metadata) + geom_density(aes(x=dt)) + geom_vline(xintercept=as.Date("2010-09-28"), col="red")
-turbines.ages.density
-ggsave(turbines.ages.density, filename="../08_reporting/turbine-ages-density-plot.png", dpi=200)
-
-
-# Turbine ages: cumulative count
-turbines.count.cumsum <- ggplot(turbines.metadata, aes(x=dt)) + stat_bin(aes(y=cumsum(..count..), geom="step")) + geom_vline(xintercept=as.Date("2010-09-28"), col="red")
-ggsave(turbines.count.cumsum, filename="../08_reporting/turbine-cumulative-count-germany.png", dpi=200)
-# ggplot(turbines.metadata, aes(x=dt)) + stat_bin(data=subset(turbines.metadata, NUTS_ID==" DE141"), aes(y=cumsum(..count..), geom="step"))
-
-# Turbine ages: NUTS3 aggregated
-turbines.nuts3aggregation <- aggregate(turbines.metadata, by=list(turbines.metadata$NUTS_ID), list)
-rownames(turbines.nuts3aggregation) <- turbines.nuts3aggregation$Group.1
-
-
-turbines.nuts3.count.cumsum.plot <- ggplot(turbines.nuts3aggregation, aes(x=dt)) + stat_bin(aes(y=cumsum(..count..), geom="step")) + geom_vline(xintercept=as.Date("2010-09-28"), col="red")
-ggsave(turbines.nuts3.count.cumsum.plot, filename="../08_reporting/turbine-cumulative-count-nuts3.png", dpi=200)
-
-turbines.nuts3aggregation$age.median <- lapply(turbines.nuts3aggregation$dt, median)
-
-
-# map
-ages.nuts3.map <- tm_shape(geodata_de, xlim=c(10.458-5,10.458+5)) + tm_borders(col="#223949") + tm_fill(col="dt", palette = viridisLite::inferno(6)) +
-  tm_shape(geodata_eu, xlim=c(10.458-6,10.458+6)) + tm_fill(col="#09101D") +
-  tm_layout(bg.color = "#12232f", inner.margins = c(0, .02, .02, .02), legend.text.color = "#f5fafa", legend.title.color="#f5fafa", legend.position = c("left", "top"))
-ages.nuts3.map
-tmap_save(ages.nuts3.map, filename="../08_reporting/ages-nuts3-map.png", dpi=600, outer.margins = c(0,0,0,0))
-
-
-plot.ts(power.generated.ts[, c("DE145", "DE141", "DEF07")])
-ts_seasonal(power.generated.ts[,"DE145"], type="normal")
-ggplot(power.generated.selection, aes(x=X, y=DE80N, group = 1)) + geom_line() + xlab("")
-plot(window(power.generated.ts, start=c(2015,3), end=c(2015,4)),  +  ylab="", col="blue", lwd=2  +     main="Monthly closing price of SBUX")
-# Power generation: all districts superposed
-
-# Power generation: spatial cross-correlation plot
-corr.power <- cor(power.generated, method = "spearman")
-# st_distance(head(geodata_de, 5))
-geodata.districts.producing <- geodata_de[which(geodata_de$NUTS_ID %in% colnames(power.generated)),]
-distances.nuts3 <- st_distance(geodata.districts.producing)
-rownames(distances.nuts3) <- geodata.districts.producing$NUTS_ID
-colnames(distances.nuts3) <- geodata.districts.producing$NUTS_ID
-
-geodata.districts.producing.centroids <- st_centroid(geodata.districts.producing)
-rownames(geodata.districts.producing.centroids) <- geodata.districts.producing$NUTS_ID
-
-distances.nuts3.centroids <- st_distance(geodata.districts.producing.centroids)
-rownames(distances.nuts3.centroids) <- geodata.districts.producing$NUTS_ID
-colnames(distances.nuts3.centroids) <- geodata.districts.producing$NUTS_ID
-
-upper.tri(x, diag = FALSE)
-
-minmaxscale <- function(x){
-  return ((x-min(x))/(max(x)-min(x)))
-}
-
-power.generated.normalized <- data.frame(lapply(power.generated, FUN=minmaxscale))
-
-# Power Generation: overlay of density plots, colored by (district centroid) latitude
-
-colnames(power.generated.normalized)
-data<- melt(power.generated.normalized)
-ggplot(data, aes(x=value, fill=variable)) + geom_density(alpha=0.1) + theme(legend.position = "none")
-
-centroids_coords <- st_coordinates(geodata.districts.producing.centroids)
-rownames(centroids_coords) <- rownames(geodata.districts.producing.centroids)
-colnames(centroids_coords) <- c("lat", "lon")
-
-get_lat <- function(nuts_id){
-  lat <- centroids_coords[nuts_id, "lat"]
-  return(lat)
-}
-
-get_age <- function(nuts_id){
-  age <- turbines.nuts3aggregation$age.median
-  return(dt)
-}
-
-# Hypothesis: densities get sharper as latitude increases: mostly WEAK evidence
-data <- stack(power.generated.normalized[, geodata_de[which(geodata_de$turbine.counts>50), ]$NUTS_ID])
-p <- ggplot(data, aes(x = values, ..scaled..)) +
-  stat_density(aes(group = ind, color = get_lat(ind), alpha=0.5),position="identity",geom="line", trim=TRUE)
-fig <- ggplotly(p)
-fig
-
-# Hypothesis: densities get sharper for newer turbines
-data <- stack(power.generated.normalized[, geodata_de[which(geodata_de$turbine.counts>50), ]$NUTS_ID])
-p <- ggplot(data, aes(x = values, ..scaled..)) +
-  stat_density(aes(group = ind, color = get_dt(ind), alpha=0.5),position="identity",geom="line", trim=TRUE)
-fig <- ggplotly(p)
-fig
-
-htmlwidgets::saveWidget(as_widget(fig), "density_power.html")
-
-power.generated.density <- ggplot(power.generated.normalized) + geom_density(aes(x=DE218)) + scale_x_log10()
-power.generated.density
-
-power.generated.ecdf <- ggplot(power.generated.normalized, aes(DE218)) + stat_ecdf(geom = "point")
-power.generated.ecdf
-
 # TODO: why districts in power.generated not all in geodata_de districts with power.installed>0? Hypotheses: (1) geodata_de, power.generated with different NUTS3 definition
 colnames(power.generated) %in% geodata_de[which(geodata_de$power.installed>0),]$NUTS_ID
 
-get_new_commisionings <- function(nuts_id){
+get_new_commisionings <- function(nuts_id, turbines.metadata){
   new.commissionings <- data.table(turbines.metadata) %>%
     .[which(turbines.metadata$NUTS_ID==nuts_id), c("NUTS_ID", "dt", "power")] %>%
     arrange(., dt)
@@ -244,19 +86,19 @@ get_new_commisionings <- function(nuts_id){
   return(new.commissionings)
 }
 
-aggregate_sameday_commissionings <- function(nuts_id){
-  new.commissionings.aggregated <-aggregate(power~dt, data=get_new_commisionings(nuts_id), sum)
+aggregate_sameday_commissionings <- function(nuts_id, turbines.metadata){
+  new.commissionings.aggregated <- aggregate(power~dt, data=get_new_commisionings(nuts_id, turbines.metadata), sum)
   return(new.commissionings.aggregated)
 }
 
-get_installed_power <- function(nuts_id){
-  capacity.installed <- aggregate_sameday_commissionings(nuts_id)
-  capacity.installed$power <- cumsum(new.commissionings.aggregated$power)
+get_installed_power <- function(nuts_id, turbines.metadata){
+  capacity.installed <- aggregate_sameday_commissionings(nuts_id, turbines.metadata)
+  capacity.installed$power <- cumsum(capacity.installed$power)
   capacity.installed.xts <- xts(capacity.installed, order.by=ymd(capacity.installed$dt)) %>%
    .$power
 
    storage.mode(capacity.installed.xts) <- "double"
-   index(capacity.installed.xts) <- index(capacity.installed.xts) + seconds(1)  # consider commissioning times as always being at 00:00:01
+   index(capacity.installed.xts) <- index(capacity.installed.xts) # consider commissioning times as always being at 00:00:00
    colnames(capacity.installed.xts) <- nuts_id
 
    # unit test get_installed_power
@@ -265,12 +107,12 @@ get_installed_power <- function(nuts_id){
    return(capacity.installed.xts)
 }
 
-get_capacity_factor <- function(nuts_id){
-  capacity.installed.xts <- get_installed_power(nuts_id)
+get_capacity_factor <- function(nuts_id, turbines.metadata, power.generated.xts){
+  capacity.installed.xts <- get_installed_power(nuts_id, turbines.metadata)
 
   blank.xts <- xts(x=NULL,
-                   seq(from=start(capacity.installed.xts),
-                       to=end(power.generated.xts),
+                   seq(from=start(capacity.installed.xts)+hours(1),
+                       to=as.Date(end(power.generated.xts))+hours(23),
                        by="hour"))
 
   capacity.installed.xts <- merge.xts(blank.xts,
@@ -278,15 +120,15 @@ get_capacity_factor <- function(nuts_id){
                                       fill=na.locf)
   capacity.installed.xts <- capacity.installed.xts["20150101/20151231"]
 
-  cf <- power.generated.xts$DEF0C/capacity.installed.xts
+  cf <- power.generated.xts[, nuts_id]/capacity.installed.xts
   return(cf)
 }
 
 # TODO: calculate all CFs and put them into single data.table / xts
 get_all_capacity_factors <- function(){
-  apply(power.generated.xts, MARGIN=1, FUN=get_capacity_factor)
+  # cf.all <- apply(power.generated.xts, MARGIN=2, FUN=get_capacity_factor(, turbines.metadata, power.generated.xts))
+  cf.all <- vapply(power.generated.xts, function(col) get_capacity_factor(col, turbines.metadata, power.generated.xts), FUN.VALUE = numeric(nrow(power.generated.xts)))
 }
-
 
 beepr::beep(sound=4)
 
