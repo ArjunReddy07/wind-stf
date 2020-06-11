@@ -77,11 +77,18 @@ turbines.metadata <- st_as_sf(
   read.csv("metadata/wind_turbine_data.csv", sep=";"),
   coords = c("lon", "lat"),
   crs=st_crs(geodata.de))
-turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%M.%Y"))  # commissioning date column to standtard datetime format
-turbines.metadata <- turbines.metadata[which(turbines.metadata$dt < "2015-12-31"),]          # only consider turbines commissioned before 2015-12-31
-turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
 
-# TODO: DE146 should be in turbines.metadata$NUTS_ID
+turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%M.%Y"))  # commissioning date column to standard datetime format
+
+# TODO: several dt entries become NA after we change its format
+is.na(turbines.metadata)
+
+turbines.metadata <- turbines.metadata[which(turbines.metadata$dt < "2015-12-31"),]          # only consider turbines commissioned before 2015-12-31
+
+# TODO: DE146 should be in turbines.metadata$NUTS_ID. Reason: its dt entry become NA and is filtered out by <"2015-12-31"
+"DE146" %in% unique(turbines.metadata$NUTS_ID)
+
+turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
 
 # Load power generation data
 # TODO: drop observations after 2015
