@@ -142,7 +142,7 @@ GetPowerInstalledTimeSeries <- function(.power.installed=power.installed){
 
 GetAllCapacityFactorsTimeSeries <- function(power.generated.xts, power.installed.xts){
   cf <- power.generated.xts/power.installed.xts
-  cf <- na.fill(cf, fill=0)
+  cf <- na.fill(cf, fill=0)  # handle NAs resulting from divisions by zero (no power.installed)
 
   # unit test for GetCapacityFactor
   GetColumnsContainingNA(cf, view=TRUE)
@@ -159,6 +159,42 @@ GetColumnsContainingNA <- function(df, view=FALSE){
   }
   else return("No NA found")
 }
+
+# Get matrix: correlation matrix for generated power
+corr.cf <- cor(cf, method = "spearman")
+
+# Get matrix: pair-wise districts centroids distances
+geodata.districts.producing <- geodata.de[which(geodata.de$NUTS_ID %in% colnames(power.generated)),]
+geodata.districts.producing.centroids <- st_centroid(geodata.districts.producing)
+rownames(geodata.districts.producing.centroids) <- geodata.districts.producing.centroids$NUTS_ID
+geodata.districts.producing.centroids <- geodata.districts.producing.centroids[names(power.generated.xts),]    # order centroids dataframe the same way as power.generated.xts
+
+distances.nuts3.centroids <- st_distance(geodata.districts.producing.centroids)
+rownames(distances.nuts3.centroids) <- geodata.districts.producing.centroids$NUTS_ID
+colnames(distances.nuts3.centroids) <- geodata.districts.producing.centroids$NUTS_ID
+
+distances.nuts3 <- st_distance(geodata.districts.producing)
+rownames(distances.nuts3) <- geodata.districts.producing$NUTS_ID
+colnames(distances.nuts3) <- geodata.districts.producing$NUTS_ID
+
+turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
+turbines.centroids <- turbines.metadata.st[, c("NUTS_ID", "lon", "lat")] %>%
+  tibble::rownames_to_column("NUTS_ID") %>%
+  group_by(NUTS_ID) %>%
+  geosphere::centroid(.)
+
+# Transform a matrix upper diagonal into a vector
+TransformMatrixIntoVector <- function(A){
+  bool.mask <- upper.tri(A, diag = FALSE)
+  V <- A[bool.mask]
+  return(V)
+}
+
+plot_ly(x=TransformMatrixIntoVector(distances.nuts3.centroids), y=TransformMatrixIntoVector(corr.cf))
+
+correlogram.data <- data.table(cbind(TransformMatrixIntoVector(distances.nuts3.centroids), TransformMatrixIntoVector(corr.cf)))
+colnames(correlogram.data) <- c("centroid.distance", "spearman.correlation")
+ggplot(correlogram.data, aes(x=centroid.distance, y=spearman.correlation)) + geom_point()
 
 beepr::beep(sound=4)
 # TODO: not all colnames in power.generated.xts can be found in turbines.metadata$NUTS_ID
