@@ -78,7 +78,7 @@ turbines.metadata <- st_as_sf(
   coords = c("lon", "lat"),
   crs=st_crs(geodata.de))
 
-turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%M.%Y"))  # commissioning date column to standard datetime format
+turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
 
 # TODO: several dt entries become NA after we change its format
 is.na(turbines.metadata)
