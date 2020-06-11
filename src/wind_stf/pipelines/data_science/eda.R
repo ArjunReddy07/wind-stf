@@ -80,14 +80,11 @@ turbines.metadata <- st_as_sf(
 
 turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
 
-# TODO: several dt entries become NA after we change its format
-is.na(turbines.metadata)
-
-turbines.metadata <- turbines.metadata[which(turbines.metadata$dt < "2015-12-31"),]          # only consider turbines commissioned before 2015-12-31
-
-# TODO: DE146 should be in turbines.metadata$NUTS_ID. Reason: its dt entry become NA and is filtered out by <"2015-12-31"
+# checking for data loss during transformation
+sum(is.na(turbines.metadata))
 "DE146" %in% unique(turbines.metadata$NUTS_ID)
 
+turbines.metadata <- turbines.metadata[which(turbines.metadata$dt < "2015-12-31"),]          # only consider turbines commissioned before 2015-12-31
 turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
 
 # Load power generation data
@@ -125,76 +122,43 @@ GetPowerInstalledTimeSeries <- function(.power.installed=power.installed){
                        by="hour"))
 
   .power.installed <- select(.power.installed, -power)
-  power.installed.xts <- read.zoo(.power.installed, split="NUTS_ID")
-
-  power.installed.xts2 <- merge.xts(blank.xts,
-                                   power.installed.xts,
-                                   fill=na.locf) %>%
+  power.installed.xts <- read.zoo(.power.installed, split="NUTS_ID") %>%
+    merge.xts(blank.xts,
+              .,
+              fill=na.locf) %>%
+    na.fill(., fill=0) %>%
     .["20150101/20151231"]
 
-  colnames(blank.xts) <- unique(.power.installed$NUTS_ID)
+  power.installed.xts <- power.installed.xts[, names(power.generated.xts)]  # order columns the same way of power.generated.xts
 
-  power.installed <- aggregate_sameday_commissionings(metadata)
-  power.installed$power <- cumsum(power.installed$power)
-  power.installed.xts <- xts(power.installed, order.by=ymd(capacity.installed$dt)) %>%
-    .$power
-
-  storage.mode(power.installed.xts) <- "double"
-  index(power.installed.xts) <- index(power.installed.xts) # consider commissioning times as always being at 00:00:00
-  colnames(power.installed.xts) <- nuts_id
-
-  # unit test get_installed_power
+  # tests for GetPowerInstalledTimeSeries
   # assertive.base::are_identical(sum(new.commissionings$power), max(capacity.installed$power))
   # assertive.properties::is_monotonic_increasing(capacity.installed$power)
+  # sum(is.na(power.installed.xts)) == 0
+  # sum(names(power.installed.xts) == names(power.generated.xts))
+
   return(power.installed.xts)
 }
 
-GetCapacityFactor <- function(nuts_id, metadata=turbines.metadata, data=power.generated.xts){
-  capacity.installed.xts <- get_installed_power(nuts_id, metadata)
+GetAllCapacityFactorsTimeSeries <- function(power.generated.xts, power.installed.xts){
+  cf <- power.generated.xts/power.installed.xts
+  cf <- na.fill(cf, fill=0)
 
-  blank.xts <- xts(x=NULL,
-                   seq(from=start(capacity.installed.xts)+hours(1),
-                       to=as.Date(end(data))+hours(23),
-                       by="hour"))
+  # unit test for GetCapacityFactor
+  GetColumnsContainingNA(cf, view=TRUE)
 
-  capacity.installed.xts <- merge.xts(blank.xts,
-                                      capacity.installed.xts,
-                                      fill=na.locf)
-  capacity.installed.xts <- capacity.installed.xts["20150101/20151231"]
-
-  cf <- power.generated.xts/capacity.installed.xts
   return(cf)
 }
 
-# TODO: calculate all CFs and put them into single data.table / xts
-GetAllCapacityFactors <- function(){
-  # v0
-  # cf.all <- vapply(power.generated.xts, function(col) dummy_function(names(col)), FUN.VALUE = numeric(nrow(power.generated.xts)))
-
-  # v1
-  # power.generated.all <- power.generated.xts
-  # power.installed.all <- vapply(power.generated.xts, function(col) get_installed_power(col), FUN.VALUE = numeric(nrow(power.generated.xts)))
-  # cf.all <- power.generated.all / power.installed.all
-  # crbind(cf.all, cf)
-
-  # v2
-  cf.all <- xts()
-  for ( nuts_id in names(power.generated.xts) ){
-    cf <- get_capacity_factor(nuts_id)
-    print(nuts_id)
+GetColumnsContainingNA <- function(df, view=FALSE){
+  if(sum(is.na(cf)) != 0) {
+    columns.with.na <- df[,which(sapply(df, function(x) sum(is.na(x))) > 0)]
+    columns.with.na.names <- names(columns.with.na)
+    if(view) View(columns.with.na)
+    return(columns.with.na.names)
   }
-  return(cf)
+  else return("No NA found")
 }
 
-# cfs <- get_all_capacity_factors()
 beepr::beep(sound=4)
-
-# debugging hypothesis: differnt from the examples
-# xz <- xts(replicate(6, sample(c(1:100), 1000, rep = T)),
-#           order.by = Sys.Date() + 1:1000)
-# names(xz) <- c("a", "b", "c", "d", "e", "f")
-#
-# xz_a <- vapply(xz, function(col) col + 100, FUN.VALUE = numeric(nrow(xz)))
-# xz_b <- xz/xz_a
-
 # TODO: not all colnames in power.generated.xts can be found in turbines.metadata$NUTS_ID
