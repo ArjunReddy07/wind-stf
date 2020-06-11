@@ -22,10 +22,7 @@ library(TSstudio)
 library(lubridate)
 library(xts)
 
-# ===========================================
-# Defining constants
-# ===========================================
-
+# Defining constants ===========================================
 # Uber Color Schemes
 # colorscheme_uber <- data.table(
 #  terrain = c("waters","land","highway","roads","parks","airport"),
@@ -37,9 +34,7 @@ library(xts)
 golden_ratio <- (1+sqrt(5))/2
 
 
-# ===========================================
-# Loading data
-# ===========================================
+# Loading data ===========================================
 # Ensure current working dir is data/01_raw
 if(!dir.exists("./metadata")){
   setwd("./data/01_raw")
@@ -74,17 +69,19 @@ tryCatch(
   }
 )
 
-geodata_de <- geodata[which(geodata$CNTR_CODE == 'DE'), ]
-geodata_eu <- geodata[geodata$CNTR_CODE %in% c("DK", "PL", "CZ", "SK", "CH", "AT", "FR", "BE", "LU", "NL"), ]  # DE neighboring countries
+geodata.de <- geodata[which(geodata$CNTR_CODE == 'DE'), ]
+geodata.eu <- geodata[geodata$CNTR_CODE %in% c("DK", "PL", "CZ", "SK", "CH", "AT", "FR", "BE", "LU", "NL"), ]  # DE neighboring countries
 
 # Load metadata: wind turbines spatial data frame
 turbines.metadata <- st_as_sf(
-  read.csv("metadata/wind_turbine_data_comma-separated.csv"),
+  read.csv("metadata/wind_turbine_data.csv", sep=";"),
   coords = c("lon", "lat"),
-  crs=st_crs(geodata_de))
+  crs=st_crs(geodata.de))
 turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%M.%Y"))  # commissioning date column to standtard datetime format
 turbines.metadata <- turbines.metadata[which(turbines.metadata$dt < "2015-12-31"),]          # only consider turbines commissioned before 2015-12-31
 turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
+
+# TODO: DE146 should be in turbines.metadata$NUTS_ID
 
 # Load power generation data
 # TODO: drop observations after 2015
@@ -99,42 +96,53 @@ power.generated <- select(power.generated, -X)
 
 power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
 
-# ===========================================
-# Preprocessing
-# ===========================================
+# Preprocessing  ===========================================
 # TODO: why districts in power.generated not all in geodata_de districts with power.installed>0? Hypotheses: (1) geodata_de, power.generated with different NUTS3 definition
 colnames(power.generated) %in% geodata_de[which(geodata_de$power.installed>0),]$NUTS_ID
 
-get_new_commisionings <- function(nuts_id, turbines.metadata=turbines.metadata){
-  new.commissionings <- data.table(turbines.metadata) %>%
-    .[which(turbines.metadata$NUTS_ID==nuts_id), c("NUTS_ID", "dt", "power")] %>%
-    arrange(., dt)
-  new.commissionings <- select(new.commissionings, -NUTS_ID)
-  return(new.commissionings)
+GetPowerInstalled <- function(metadata=turbines.metadata){
+  power.installed.deltas <- aggregate(power ~ dt + NUTS_ID, data=metadata, sum)  # installed power aggregated for sameday, same district commissionings
+
+  power.installed <- power.installed.deltas %>%
+    arrange(NUTS_ID, dt) %>%
+    group_by(NUTS_ID) %>%
+    mutate(power.tot = cumsum(power))
+
+  return(power.installed)
 }
 
-aggregate_sameday_commissionings <- function(nuts_id, metadata=turbines.metadata){
-  new.commissionings.aggregated <- aggregate(power~dt, data=get_new_commisionings(nuts_id, metadata), sum)
-  return(new.commissionings.aggregated)
-}
+GetPowerInstalledTimeSeries <- function(.power.installed=power.installed){
+  blank.xts <- xts(x=NULL,
+                   seq(from=min(.power.installed$dt) + hours(1),
+                       to=as.Date("2015-12-31") + hours(23),
+                       by="hour"))
 
-get_installed_power <- function(nuts_id, metadata=turbines.metadata){
-  capacity.installed <- aggregate_sameday_commissionings(nuts_id, metadata)
-  capacity.installed$power <- cumsum(capacity.installed$power)
-  capacity.installed.xts <- xts(capacity.installed, order.by=ymd(capacity.installed$dt)) %>%
+  .power.installed <- select(.power.installed, -power)
+  power.installed.xts <- read.zoo(.power.installed, split="NUTS_ID")
+
+  power.installed.xts2 <- merge.xts(blank.xts,
+                                   power.installed.xts,
+                                   fill=na.locf) %>%
+    .["20150101/20151231"]
+
+  colnames(blank.xts) <- unique(.power.installed$NUTS_ID)
+
+  power.installed <- aggregate_sameday_commissionings(metadata)
+  power.installed$power <- cumsum(power.installed$power)
+  power.installed.xts <- xts(power.installed, order.by=ymd(capacity.installed$dt)) %>%
     .$power
 
-  storage.mode(capacity.installed.xts) <- "double"
-  index(capacity.installed.xts) <- index(capacity.installed.xts) # consider commissioning times as always being at 00:00:00
-  colnames(capacity.installed.xts) <- nuts_id
+  storage.mode(power.installed.xts) <- "double"
+  index(power.installed.xts) <- index(power.installed.xts) # consider commissioning times as always being at 00:00:00
+  colnames(power.installed.xts) <- nuts_id
 
   # unit test get_installed_power
   # assertive.base::are_identical(sum(new.commissionings$power), max(capacity.installed$power))
   # assertive.properties::is_monotonic_increasing(capacity.installed$power)
-  return(capacity.installed.xts)
+  return(power.installed.xts)
 }
 
-get_capacity_factor <- function(nuts_id, metadata=turbines.metadata, data=power.generated.xts){
+GetCapacityFactor <- function(nuts_id, metadata=turbines.metadata, data=power.generated.xts){
   capacity.installed.xts <- get_installed_power(nuts_id, metadata)
 
   blank.xts <- xts(x=NULL,
@@ -147,18 +155,39 @@ get_capacity_factor <- function(nuts_id, metadata=turbines.metadata, data=power.
                                       fill=na.locf)
   capacity.installed.xts <- capacity.installed.xts["20150101/20151231"]
 
-  cf <- data[, nuts_id]/capacity.installed.xts
-  # cf <- power.generated.xts[, "DEF0C"]/capacity.installed.xts
+  cf <- power.generated.xts/capacity.installed.xts
   return(cf)
 }
 
 # TODO: calculate all CFs and put them into single data.table / xts
-get_all_capacity_factors <- function(){
-  # cf.all <- apply(power.generated.xts, MARGIN=2, FUN=get_capacity_factor(, turbines.metadata, power.generated.xts))
-  cf.all <- vapply(power.generated.xts, function(col) get_capacity_factor(col, turbines.metadata, power.generated.xts), FUN.VALUE = numeric(nrow(power.generated.xts)))
-  return(cf.all)
+GetAllCapacityFactors <- function(){
+  # v0
+  # cf.all <- vapply(power.generated.xts, function(col) dummy_function(names(col)), FUN.VALUE = numeric(nrow(power.generated.xts)))
+
+  # v1
+  # power.generated.all <- power.generated.xts
+  # power.installed.all <- vapply(power.generated.xts, function(col) get_installed_power(col), FUN.VALUE = numeric(nrow(power.generated.xts)))
+  # cf.all <- power.generated.all / power.installed.all
+  # crbind(cf.all, cf)
+
+  # v2
+  cf.all <- xts()
+  for ( nuts_id in names(power.generated.xts) ){
+    cf <- get_capacity_factor(nuts_id)
+    print(nuts_id)
+  }
+  return(cf)
 }
 
-get_capacity_factor("DEF0C")
+# cfs <- get_all_capacity_factors()
 beepr::beep(sound=4)
 
+# debugging hypothesis: differnt from the examples
+# xz <- xts(replicate(6, sample(c(1:100), 1000, rep = T)),
+#           order.by = Sys.Date() + 1:1000)
+# names(xz) <- c("a", "b", "c", "d", "e", "f")
+#
+# xz_a <- vapply(xz, function(col) col + 100, FUN.VALUE = numeric(nrow(xz)))
+# xz_b <- xz/xz_a
+
+# TODO: not all colnames in power.generated.xts can be found in turbines.metadata$NUTS_ID
