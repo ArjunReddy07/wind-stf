@@ -71,19 +71,20 @@ e_{T+h} = y_{T+h} - \hat{y}_{T+h|T},
 $$
 for a training dataset $\{y_1,…,y_T\}$ and a test dataset $\{y_{T+1}, y_{T+2},…\}$.
 
+Many different metrics exist, each one conveying one aspect of the error distribution.  Some useful definitions are presented from \ref{eq-rmse} to \{eq-}.
+$$
+RMSE =
+$$
+
+$$
+MAE = 
+$$
+
 By summarizing the forecast error distribution into a reduced set of values, forecasting metrics are essential in model development as well as in method development.  To forecasters (model developers) and forecast users, metrics offer  a concise, unambiguous way to communicate accuracy requirements and specifications. For methods developers, it allows comparing different methods across different use cases, forecasting settings and datasets.
 
+Metrics differ most importantly in their interpretability and their sensitivity to scale and to outliers. As such, choosing a metric should be based on the application requirements. For example, while failing to forecast single sudden peaks in local wind speed (wind gusts) might not be important in wind farm planning, it might be a primary requirement for wind turbine operation. \ref{table-sensitivities} summarizes sensitivities.
 
-
-*convey*
-
-- Examples: RMSE, MAPE, ... 
-  $$
-  RMSE =
-  $$
-  
-
-- Accuracy not the only thing that matters
+Although an important one, accuracy is often just one of many requirements in a model development. 
 
 - keywords: Forecast Errors
 
