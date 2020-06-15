@@ -16,7 +16,12 @@
 
 > Most machine learning algorithms have **hyperparameters**, settings that we can use to control the algorithm’s behavior. The values of hyperparameters are not adapted by the **learning algorithm** itself (though we can design a nested learning procedure in which one learning algorithm learns the best hyperparameters for another learning algorithm). [[goodfellow2016deep]](https://www.deeplearningbook.org/contents/ml.html)
 
+- Define Time Series
+- Define Time Series Forecasting mathematically 
+
 ### 2.2.1 Forecasting Methods
+
+- Generalities: minimizing residuals [[hyndman2020principles]](https://otexts.com/fpp2/accuracy.html)/loss on a training set
 
 - simple methods
 
@@ -25,11 +30,10 @@
     \hat{y}_{t+1|t} = y_{t}
     $$
     
-
-  - seasonal naive [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
-
-  - drift [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
-
+- seasonal naive [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
+  
+- drift [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
+  
 - (univariate) conventional 
 
   - ARIMA
@@ -43,7 +47,7 @@
 
   - N-BEATS
 
-### 2.2.2 Evaluating Models Performance
+### 2.2.2 Models Evaluation / Evaluating Models Performance
 
 Splitting dataset into training and test dataset
 
@@ -61,8 +65,27 @@ Time Series Cross-Validation
 
 #### Metrics
 
-- Forecast Errors
+A central requirement for forecasting models is accuracy. It is usual to quantify it in terms of accuracy metrics, which characterize the distribution of *forecast errors*. A forecast error expresses by how much a forecast  $\hat{y}_{T+h|T}$ for a point in the test set deviates from its corresponding observed value $y_{T+h}$. It could be expressed as
+$$
+e_{T+h} = y_{T+h} - \hat{y}_{T+h|T},
+$$
+for a training dataset $\{y_1,…,y_T\}$ and a test dataset $\{y_{T+1}, y_{T+2},…\}$.
+
+By summarizing the forecast error distribution into a reduced set of values, forecasting metrics are essential in model development as well as in method development.  To forecasters (model developers) and forecast users, metrics offer  a concise, unambiguous way to communicate accuracy requirements and specifications. For methods developers, it allows comparing different methods across different use cases, forecasting settings and datasets.
+
+
+
+*convey*
+
 - Examples: RMSE, MAPE, ... 
+  $$
+  RMSE =
+  $$
+  
+
+- Accuracy not the only thing that matters
+
+- keywords: Forecast Errors
 
 #### Procedures
 
@@ -77,7 +100,7 @@ Approaches:
   - VARIMA
 - model ST behavior via DL-methods
   - DCRNN
-  - Graph WaveNet
+  - Graph WaveNet [see liu2020gnn]
 
 ### 2.3.1 Metrics
 
