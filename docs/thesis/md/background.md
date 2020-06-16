@@ -34,7 +34,7 @@ Climate and weather-conditioned local wind velocities imply for the power genera
 
 ## 2.2 Time Series Forecasting
 
-In \cite{bontempi2013strategies}, Bontenpi et al. define time series as "a sequence of historical measurements $y_t$ of an observable variable $y$ at equal time intervals". An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2020principles}.
+In \cite{bontempi2013strategies}, Bontenpi et al. define time series as "a sequence of historical measurements $y_t$ of an observable variable $y$ at equal time intervals". An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2018principles}.
 
 Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g. hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish conventional from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
 
@@ -42,37 +42,53 @@ In *univariate forecasting*, one aims to predict the value of a variable $y_{T+1
 
 ### 2.2.1 Forecasting Methods
 
-Analogous to Murphy in \cite{murphy2012probabilistic}, we distinguish the concepts of method, model and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e. inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference).
+Analogous to Murphy in \cite{murphy2012probabilistic}, we distinguish the concepts of method, model and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e. inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference). We denote by a model any unique configuration of parameters in a space defined by a method. Equivalently, a model represents a response surface (deterministic model) or the distribution of the response conditional on its inputs (probabilistic model).
 
-We start by presenting simple forecasting methods, which are often used as baseline for other methods (\cite{hyndman2020principles}).
+We start by presenting simple forecasting methods, which are often used as baseline for other methods (\cite{hyndman2018principles}).
 
-**Historical Average (HA) **method: forecasts assume all a constant value: the average of the historical data:
+**Historical Average (HA) method. Along wit**Forecast for any point assumes a constant value: the average of the historical data (\ref{eq-naive}).
 $$
-\hat{y}_{T+h|T} = \frac{1}{T}\sum_{t=1}^Ty_t .
+\hat{y}_{T+h|T} = \frac{1}{T}\sum_{t=1}^Ty_t
 $$
-**Naïve** method: this constant is the value from the last observation (\ref{eq-naive}). As the naïve forecast is the optimal prediction for a random walk process, it is also known as *random walk* method.
+**Naïve method**. Forecast for any point assumes a constant value: the value from the last observation (\ref{eq-naive}). As the naïve forecast is the optimal prediction for a random walk process, it is also known as *random walk* method.
 $$
 \hat{y}_{T+h|T} = y_T
 $$
-**Seasonal** **Naïve** method: models the time series as harmonic with period $k$ observations (i.e. perfectly seasonal with seasonal period $k$), and for a given point  in future, suggest as forecast the last observed value from the same season (\ref{eq-snaive}). For example, all forecasts for future June values assume the value from the last observed June value. 
+**Seasonal Naïve method**. Time series are modeled as harmonic with period $k$ observations (i.e. perfectly seasonal with seasonal period $k$), and for a given point  in future, suggest the corresponding last observed value from the last season (\ref{eq-snaive}). For example, all monthly forecasts for any future June assume the value from the last observed June value. 
 $$
 \hat{y}_{T+h|T} = y_{T+h-k}
 $$
-**Drift** method: analogous to the naïve method, with the constant being not the  the last observed value itself but the average rate of change. 
+**Drift method**. Forecast for any point assumes a constant value rate of change, with values themselves starting from the latest observed value. 
 $$
 \hat{y}_{T+h|T} = y_{T} + h\left(\frac{y_T-y_1}{T-1} \right)
 $$
 
 - desired properties of residuals
-  - uncorrelated, as any correlation in residuals indicate 
+  - uncorrelated, as any correlation in residuals indicate there is information left in them which could be used to improve the forecasts. 
   - zero mean 
 
-getting better results – Generalities: minimizing residuals [[hyndman2020principles]](https://otexts.com/fpp2/accuracy.html)/loss on a training set
+- getting better results – general approach: minimizing residuals, by  using a partition of the available historical data for updating (iteratively or not) the model parameters configuration towards one that either (a) maximizes the likelihood of this configuration or (b) minimizes a loss function. Likelihood is defined as the relative number of ways that a configuration of model parameters can produce the provided data (\cite{mcelreath2020rethinking}). In contrast, loss functions quantify the deviation between predicted and ground truth values. The Mean Squared Error (MSE, \ref{eq-mse}) is typical choice for a loss function for continuous-type responses, as it accounts for both bias and variance errors and its smoothness is amenable to convex optimization. (\cite{goodfellow2016deep}).
+  $$
+  MSE = \frac{1}{N}\sum_{t=1}^N e^2_t
+  $$
+  The ultimate aim of the optimization process underlying the model inference is to maximize model generalization performance, i.e. to minimize its generalization error. Aiming at an unbiased estimation of this error, one often dedicates exclusive partitions of the available data for (a) model inference and for (b) assessing the generalization error. The partition (a) is often referred as the *training set*; the partition (b), as the *test set* (\cite{hyndman2018principles}, \ref{fig-training-test-split}). 
+
+  
+
+  ![training-test-split](https://otexts.com/fpp2/fpp_files/figure-html/traintest-1.png)
+
+  Fig ???. Splitting the available data into training and test sets (adapted from \cite{krispin2019handson}). 
+
+  
+
+- Quantifying generalization error via performance metrics
+
+- As models have parameters, so do methods have their own, often referred as *hyperparameters*. They may control the space of model parameters configurations, the model inference process or eventually the loss function (\cite{hutter2019automated}). Hyperparameters may have a major influence on model performance. When besides the model parameters themselves, we also search for the parameters from its parent method, yet another partition becomes necessary in order to attain a minimally unbiased estimate of the resulting generalization errors. When working with three partitions, one for model inference, another for assessing its generalization error given a hyperparameters configuration and another one for assessing it across different hyperparameters configurations, authors often refer to them as training, validation and test set, respectively.
 
 - (univariate) conventional 
 
   - ARIMA
-  - ES: from SES to Holt-Winters [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.), [[chen2019dl-tsf](file:///C:/Users/User/Downloads/fvm939e.pdf)]
+  - ES: from SES to Holt-Winters [[hyndman2018principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.), [[chen2019dl-tsf](file:///C:/Users/User/Downloads/fvm939e.pdf)]
 - hybrid
 
   - ES-RNN
@@ -80,17 +96,11 @@ getting better results – Generalities: minimizing residuals [[hyndman2020princ
 
   - N-BEATS
 
-### 2.2.2 Models Evaluation / Evaluating Models Performance
+### 2.2.2 Model Evaluation / Evaluating Models Performance
 
-Splitting dataset into training and test dataset
+> Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
 
-> separate the available data into two portions, **training** and **test** data, where the training data is used to estimate any parameters of a forecasting method and the test data is used to evaluate its accuracy.  Because the test data is not used in determining the forecasts, it  should provide a reliable indication of how well the model is likely to  forecast on new data. [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
-
-> Some references describe the test set as the “hold-out set” because  these data are “held out” of the data used for fitting. Other references call the training set the “in-sample data” and the test set the  “out-of-sample data”. We prefer to use “training data” and “test data”  in this book. . [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
-
-- "training partition", "testing partition" [krispin2019handson]
-
-![training-test-split](https://otexts.com/fpp2/fpp_files/figure-html/traintest-1.png)
+- 
 
 Time Series Cross-Validation
 
@@ -100,7 +110,7 @@ Time Series Cross-Validation
 
 #### Metrics
 
-A central requirement for forecasting models is accuracy. It is usual to quantify it in terms of accuracy metrics, which characterize the distribution of *forecast errors* (\cite{hyndman2020principles}). A forecast error expresses by how much a forecast  $\hat{y}_{T+h|T}$ for a point in the test set deviates from its corresponding observed value $y_{T+h}$. It could be expressed as
+A central requirement for forecasting models is accuracy. It is usual to quantify it in terms of accuracy metrics, which characterize the distribution of *forecast errors* (\cite{hyndman2018principles}). A forecast error expresses by how much a forecast  $\hat{y}_{T+h|T}$ for a point in the test set deviates from its corresponding observed value $y_{T+h}$. It could be expressed as
 $$
 e_{T+h} = y_{T+h} - \hat{y}_{T+h|T},
 $$
