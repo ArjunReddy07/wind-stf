@@ -206,13 +206,13 @@ Although often the most important one, accuracy is often just one of many requir
 
   
 
-Conventional approaches are characterized by the modeling of the time series as a realization of stationary stochastic process which can be expressed as combination of  interpretable components \cite{brockwell2009}. In the *classical decomposition* (\cite{makridakis1998}), the time series is described as a linear combination of a trend component $m_t$, a seasonal component $d$ and a random noise (*white noise*) $y_t$:
+Conventional approaches are characterized by the modeling of the time series as a realization of stationary stochastic process (\cite{brockwell2009}, \cite{bontenpi2013strategies}). The two most widely used families of conventional methods are the Exponential Smoothing (ES) family the ARIMA family (\cite{hyndman2018principles}). 
+
+ In the ES approach, time series is modeled as combination of  interpretable components \cite{brockwell2009}. In the *classical decomposition* (\cite{makridakis1998}), these components are trend component $m_t$, seasonal component $d$ and random noise (*white noise*) $y_t$, which are linearly combined to reconstruct the time series:
 $$
 y_t = m_t + s_t + a_t .
 $$
-Essentially, conventional approaches are represented by two major families of methods: the ARIMA family and the Exponential Smoothing (ES) families (\cite{brockwell2009}). 
-
-We describe some of the most known methods from the ARIMA and ES families.
+We now describe some of the most known methods from the ES family.
 
 **Simple Exponential Smoothing Method.** Predicts for the next period the forecast value for the previous period, adjusting it using the forecast error. Parameter: $\alpha \in \mathbb{R}_{[0,1]}$.
 $$
@@ -235,7 +235,11 @@ b_t &= \beta^*(\ell_t - \ell_{t-1}) + (1-\beta^*)b_{t-1} &(growth) \\
 s_t &= \gamma y_t/(\ell_{t-1}+b_{t-1}) + (1-\gamma)s_{t-m} \ \ \ &(seasonal)
 \end{aligned}
 $$
+ARIMA (Auto-Regressive Integrated Moving Average) methods (\cite{box1970}) rely on repeatedly applying a difference operator to the observed values until the differenced series resemble a realization of some stationary stochastic process (\cite{brockwell2009methods}).  We denote by $\nabla^k(\cdot)$ the difference operator of order $k$. For $k=1$, $\nabla y_t = y_t - y_{t-1}$; for $k=2$, we have $\nabla^2(y_t) = \nabla(\nabla y_t) = \nabla y_t - \nabla y_{t-1} = y_t -2y_{t-1} + y_{t-2}$  and so forth.
 
+
+
+We describe some of the most known methods from the ARIMA and ES families.
 
 ## 2.3 Spatio-Temporal Forecasting
 
