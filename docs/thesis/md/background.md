@@ -8,33 +8,43 @@ ___
 
 ## 2.1 Wind Power Generation
 
-In 1920, Betz (\cite{betz1920maximum}) modeled a wind harvesting system as an open-disc actuator and, by using conservation equations for momentum and energy on a stream tube flowing through this disk, he derived an upper limit for the power harvested by a horizontal-axis wind turbine. The Betz Limit, as it is known, is a function of rotor diameter $D$ (via the rotor swept area $A$)and the average free stream wind velocity $v$ at hub height $H$ (\ref{eq-betz-limit}).
+In 1920, Betz (\cite{betz1920maximum}) modeled a generic wind harvesting system as an open-disc actuator and, by using energy conservation equation for a stream tube flowing through this disk, he derived an upper limit for the power harvested by a horizontal-axis wind turbine. The *Betz Limit*, as it is known, is a function of rotor diameter $D$ (via the rotor swept area $A$) and the average free stream wind velocity $v$ at hub height $H$ (\ref{eq-betz-limit}).
 $$
-P_{ideal} = \frac{\pi}{2}\rho \cdot A(D)\cdot v^3
+P_{ideal} = \frac{1}{2}\rho \cdot A(D)\cdot v^3
 $$
-Due to generation losses such as (1) momentum deficit in lower atmosphere boundary layer, (2) wakes from neighboring turbines, (3) suboptimal yaw angle and (4) blade tip vortices, the power transmitted from the turbine rotor to the gearbox is only a fraction of this idealized maximum. All these losses are modeled into a *coefficient of power* $C_p$, to yield the actual power generation in the rotor (\ref{eq-power-real-turbine}).
+Due to losses such as those associated to (1) momentum deficit in lower atmosphere boundary layer, (2) wakes from neighboring turbines, (3) suboptimal yaw angle and (4) blade tip vortices, the power harvested by the turbine rotor is only a fraction $C_p$ (coefficient of power) of this idealized maximum. Further  losses (a) of mechanical nature in the interfaces rotor-gearbox and gearbox-generator, (b) of electrical nature in the interface generator-converter  are modeled by the fractions $\eta_{m}$ and $\eta_{e}$, respectively,  to yield the actual power generation as measured by the power converter, \ref{eq-power-real-turbine} (\cite{albadi2009capacity}).
 $$
-P = C_p \cdot \frac{\pi}{2} \rho \cdot A(D)\cdot v^3
+P = C_p\eta_{m} \eta_{e}  \cdot \frac{1}{2}\rho \cdot A(D)\cdot v^3
 $$
 In this equation, $D$ and $H$ are design variables. The air density $\rho$ may vary during operation due to changes in air temperature, but its effects are often negligible. Finally, $C_p$, $v$ depend both on design (e.g. hub height $H$, blade profiles) and operation conditions (e.g. velocity speed and direction). 
 
-In operation, the dominant source of variability for the generated power is $v$. Being climate and weather-dependent, it is also the main reason for the intermittency and non-dispatchability of wind power (\cite{demeo2006natural}): it renders the power harvesting not only intermittent, but also not dispatchable at will. This dependence motivates the usage by designers and operators of the so-called *wind-to-power curves* (or simply *power curves*), which are empirical relations that allow one to determine the generated power $P$ by knowing the wind velocity $v$ .
+![https://www.researchgate.net/profile/Marcelo_Molina/publication/221911675/figure/fig2/AS:304715268149248@1449661189252/General-description-of-a-wind-turbine-system-The-appropriate-voltage-level-is-related-to.png](https://www.researchgate.net/profile/Marcelo_Molina/publication/221911675/figure/fig2/AS:304715268149248@1449661189252/General-description-of-a-wind-turbine-system-The-appropriate-voltage-level-is-related-to.png)
 
-As design, planning, operation, maintenance and trading wind power are subject to such high variabilities, forecasting wind power generation (WPG) is invaluable at different levels. Table \ref{table-forecasting-reqs} summarizes how different system operation aspects can profit from forecasts at different time scales. Power generation from single turbines can also be aggregated at different levels. Market operators, for example, profit the most from  from regional aggregations, since for energy trading this resolution is high enough, with higher resolutions across the same space scales of interests often too costly (\cite{jung2014forecasting}). In particular for countries such as Germany, where continental and national renewables-promoting public funding initiatives such as the *Energiewende* resulted in a high penetration of wind power in the grid, being able to accurately forecast wind power generation has tangible impact both environmentally and economically.
+Fig ???. The different stages of the overall wind power conversion process (adapted from \cite{}). 
+
+In operation, the dominant source of variability for the generated power is $v$. Being climate and weather-dependent, it is also the main reason for the intermittency and non-dispatchability of wind power (\cite{demeo2006natural}). Moreover, this dependence motivates the usage by designers and generation operators of the so-called *wind-to-power curves* (or simply *power curves*), which are empirical relations that allow one to determine the generated power $P$ by knowing the wind velocity $v$ .
+
+As design, planning, operation, maintenance and trading of wind power are subject to such high variabilities, forecasting wind power generation (WPG) provides value for the different players in the electricity grid, illustrated in \ref{fig-electricity-grid-players}.  Table \ref{table-forecasting-reqs} summarizes how different system operation aspects can profit from forecasts at different time scales. Power generation from single turbines can also be aggregated at different levels. 
+
+- energy balance: preventing supply shortages and changes in frequency.
+
+Market operators, for example, profit the most from  from regional aggregations, since for energy trading this resolution is high enough, with higher resolutions across the same space scales of interests often too costly (\cite{jung2014forecasting}). In particular for countries such as Germany, where continental and national renewables-promoting public funding initiatives such as the *Energiewende* resulted in a high penetration of wind power in the grid, being able to accurately forecast wind power generation has tangible impact both environmentally and economically.
 
 | Very short <br />($\sim secs\ - 0.5h $) | short <br />($0.5h - 72h$) | medium<br />($72h\ – 1\ week $)               | long<br />($1\ week\  – 1\ year $) |
 | --------------------------------------- | -------------------------- | --------------------------------------------- | ---------------------------------- |
 | turbine control, <br />load tracking    | pre-load sharing           | power system management, <br />energy trading | turbines maintenance scheduling    |
 
-Table ???. How WPG forecasting can generate value for operators, according to forecasting horizon (\cite{jung2014forecasting}). 
+Table ???. How WPG forecasting can generate value for generation operators, according to forecasting horizon (\cite{jung2014forecasting}). 
 
-The intermittency of renewables motivated an alternative representation for the power generation: the *capacity factor* (CF). CF is defined as the ratio of the actual generated power and the installed capacity. When considering WPG data across long timespans for both analysis and forecasting, it is usual that new commissionings take place, which manifests as a step disturbance into the overall generated power. In this case, CF can be useful as it is mostly insensitive to single new commissionings. 
+The intermittency of renewables motivated an alternative measure of power generation: the *capacity factor* (CF). CF is defined as the ratio of the actual generated power and the installed capacity. When considering WPG data across long timespans for both analysis and forecasting, it is usual that new commissionings take place, which manifests itself as a step perturbation into the overall generated power. In this case, CF can be useful as it is mostly insensitive to single new commissionings. 
 
 Climate and weather-conditioned local wind velocities imply for the power generation not only significant temporal dependencies, but also significant spatial dependencies. As air masses influence one another in different scales, wind power generation in neighboring turbines tend to present higher correlations than turbines distant from one another (\cite{engeland2017variability}). Therefore, wind power generation is a phenomenon with dominant spatio-temporal dependencies.
 
+\cite{} Different approaches exist for forecasting wind power generation
+
 ## 2.2 Time Series Forecasting
 
-In \cite{bontempi2013strategies}, Bontenpi et al. define time series as "a sequence of historical measurements $y_t$ of an observable variable $y$ at equal time intervals". An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2018principles}.
+In \cite{brockwell2016intro}, Brockwell & Davis define time series as "a set of observations $y_t$, each one being recorded at a specific time $t$". When observations are recorded at discrete times, they are called a discrete-time time series, on which we focus this work. An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2018principles}.
 
 Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g. hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish conventional from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
 
@@ -80,6 +90,8 @@ $$
   Fig ???. Splitting the available data into training and test sets (adapted from \cite{krispin2019handson}). 
 
   
+
+  For a forecasting horizon of interest, A single training/test split allows estimating a single value for the generalization error for a predefined forecasting horizon. Estimating the generalization error on a single test data has the drawback
 
 - Quantifying generalization error via performance metrics
 
@@ -168,7 +180,62 @@ On one hand, single metrics concisely conveys information about the error distri
 
 Metrics differ in interpretability, scale invariance, sensitivity to outliers, symmetric penalization of negative and positive errors, and behavior predictability as $y_t \rightarrow 0$ (\cite{hyndman2006metrics}). Therefore, it is imporant that the choice on the metrics set is coherent with the application requirements \cite{armstrong2002principles}. For example, while failing to forecast single sudden peaks in local wind speed (wind gusts) might not be important in wind farm planning, it might be a primary requirement for wind turbine operation. \ref{table-sensitivities} summarizes sensitivities.
 
-Although often the most important one, accuracy is often just one of many requirements in a forecasting model development. In \cite{armstrong2002principles}, Armstrong reports that value inference time, cost savings resulting from improved decisions, interpretability, usability and ease of implementation tend to be of comparable importance to researchers, practitioners and decision makers.
+Although often the most important one, accuracy is often just one of many requirements in a forecasting model development. In \cite{armstrong2002principles}, Armstrong reports that value inference time, cost savings resulting from improved decisions, interpretability, usability, ease of implementation and development costs (human and computational resources) tend to be of comparable importance to researchers, practitioners and decision makers.
+
+2.2.3 Non-Trivial Forecasting Methods
+
+\ref{fig-methods-overview}
+
+- Conventional
+
+  - ARIMA
+  - ES
+    - Simple Exponential Smoothing
+    - Holt's Linear
+    - Holt-Winter's Additive Multiplicative
+
+- Machine Learning
+
+  - RNN
+  - CNN
+  - N-Beats
+
+- Hybrid
+
+  - ES-RNN
+
+  
+
+Conventional approaches are characterized by the modeling of the time series as a realization of stationary stochastic process which can be expressed as combination of  interpretable components \cite{brockwell2009}. In the *classical decomposition* (\cite{makridakis1998}), the time series is described as a linear combination of a trend component $m_t$, a seasonal component $d$ and a random noise (*white noise*) $y_t$:
+$$
+y_t = m_t + s_t + a_t .
+$$
+Essentially, conventional approaches are represented by two major families of methods: the ARIMA family and the Exponential Smoothing (ES) families (\cite{brockwell2009}). 
+
+We describe some of the most known methods from the ARIMA and ES families.
+
+**Simple Exponential Smoothing Method.** Predicts for the next period the forecast value for the previous period, adjusting it using the forecast error. Parameter: $\alpha \in \mathbb{R}_{[0,1]}$.
+$$
+\hat{y}_{t+1} = \hat{y}_{t} + \alpha(\hat{y}_{t} - \hat{y}_{t-1}) \\
+$$
+**Holt's Linear Method.** Features an additive trend component.  (\cite{hyndman2008es}). Parameters: $(\alpha, \beta^*) \in \mathbb{R}^2_{[0,1]}$
+$$
+\begin{align}
+\hat{y}_{t+h|t} &= \ell_t + b_th, \\
+where\ \  \ell_t &= \alpha y_t + (1-\alpha)(\ell_{t-1}+b_{t-1}) \ \ \ \ \ \ (level) \\
+b_t &= \beta^*(\ell_t - \ell_{t-1}) + (1-\beta^*)b_{t-1} \ \ \ (growth)
+\end{align}
+$$
+**Holt-Winters' Method.** Features additive trend and multiplicative seasonality components, for a seasonality length $m$, and $h^+_m = [(h-1)\mod m]+1$. Parameters: $(\alpha, \beta^*,\gamma) \in \mathbb{R}^3_{[0,1]}$ (usual bounds, refer to \cite{hyndman2008es} for details). 
+$$
+\begin{aligned}
+\hat{y}_{t+h|t} = (&\ell_t + b_th)s_{t-m+h^+_m}, \\
+where \ \ell_t &= \alpha \frac{y_t}{s_{t-m}} + (1-\alpha)(\ell_{t-1}+b_{t-1})   &(level) \\
+b_t &= \beta^*(\ell_t - \ell_{t-1}) + (1-\beta^*)b_{t-1} &(growth) \\
+s_t &= \gamma y_t/(\ell_{t-1}+b_{t-1}) + (1-\gamma)s_{t-m} \ \ \ &(seasonal)
+\end{aligned}
+$$
+
 
 ## 2.3 Spatio-Temporal Forecasting
 
