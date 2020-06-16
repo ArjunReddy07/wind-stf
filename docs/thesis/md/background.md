@@ -1,28 +1,48 @@
+## Our Hypothesis
+
+As 
+
+___
+
+
+
 ## 2.1 Wind Power Generation
 
-- Pideal = The Betz Limit (D, v³)
-- Preal = Cp(generation losses due to lower atmosphere bound. layer, sub-optimal yaw, wake from neighboring turbines, etc.)*(Betz Limit) <- the power transmitted to the gearbox 
-- Operation-independent / design variables/parameters: \rho, D, H
-- Operational variables: Cp, v³ 
-- v³: dominant parameter for Preal, main reason for *intermittency* & non-*dispatchability* of wind power, thus also main reason for forecasting; also main reason for spatio-temporal dependency of WPG
-- Using v to determine power generation via *power curves* (a.k.a. wind-to-power curves)
-- a useful definition: Capacity Factor
-- turbine: power / rated power
-  - group of turbines (e.g. wind farm, district):  power / installed power
+In 1920, Betz (\cite{betz1920maximum}) modeled a wind harvesting system as an open-disc actuator and, by using conservation equations for momentum and energy on a stream tube flowing through this disk, he derived an upper limit for the power harvested by a horizontal-axis wind turbine. The Betz Limit, as it is known, is a function of rotor diameter $D$ (via the rotor swept area $A$)and the average free stream wind velocity $v$ at hub height $H$ (\ref{eq-betz-limit}).
+$$
+P_{ideal} = \frac{\pi}{2}\rho \cdot A(D)\cdot v^3
+$$
+Due to generation losses such as (1) momentum deficit in lower atmosphere boundary layer, (2) wakes from neighboring turbines, (3) suboptimal yaw angle and (4) blade tip vortices, the power transmitted from the turbine rotor to the gearbox is only a fraction of this idealized maximum. All these losses are modeled into a *coefficient of power* $C_p$, to yield the actual power generation in the rotor (\ref{eq-power-real-turbine}).
+$$
+P = C_p \cdot \frac{\pi}{2} \rho \cdot A(D)\cdot v^3
+$$
+In this equation, $D$ and $H$ are design variables. The air density $\rho$ may vary during operation due to changes in air temperature, but its effects are often negligible. Finally, $C_p$, $v$ depend both on design (e.g. hub height $H$, blade profiles) and operation conditions (e.g. velocity speed and direction). 
+
+In operation, the dominant source of variability for the generated power is $v$. Being climate and weather-dependent, it is also the main reason for the intermittency and non-dispatchability of wind power (\cite{demeo2006natural}): it renders the power harvesting not only intermittent, but also not dispatchable at will. This dependence motivates the usage by designers and operators of the so-called *wind-to-power curves* (or simply *wind-power curves*), which are empirical relations that allow one to determine the generated power $P$ by knowing the wind velocity $v$ .
+
+As design, planning, operation, maintenance and trading wind power are subject to such high variabilities, forecasting wind power generation (WPG) is invaluable at different levels. Table \ref{table-forecasting-reqs} summarizes how different system operation aspects can profit from forecasts at different time scales. Power generation from single turbines can also be aggregated at different levels. Market operators, for example, profit the most from  from regional aggregations, since for energy trading this resolution is high enough, with higher resolutions across the same space scales of interests often too costly (\cite{jung2014forecasting}). In particular for countries such as Germany, where continental and national renewables-promoting public funding initiatives such as the *Energiewende* resulted in a high penetration of wind power in the grid, being able to accurately forecast wind power generation has tangible impact both environmentally and economically.
+
+| Very short <br />($\sim secs\ - 0.5h $) | short <br />($0.5h - 72h$) | medium<br />($72h\ – 1\ week $)               | long<br />($1\ week\  – 1\ year $) |
+| --------------------------------------- | -------------------------- | --------------------------------------------- | ---------------------------------- |
+| turbine control, <br />load tracking    | pre-load sharing           | power system management, <br />energy trading | turbines maintenance scheduling    |
+
+Table ???. How WPG forecasting can generate value for operators, according to forecasting horizon (\cite{jung2014forecasting}). 
+
+The intermittency of renewables motivated an alternative representation for the power generation: the capacity factor (CF). CF is defined as the ratio of the actual generated power and the installed power. When considering WPG data across long timespans for both analysis and forecasting, it is usual that new commissionings take place, which manifests as a step disturbance into the overall generated power. In this case, CF can be useful as it is mostly insensitive to new installations. 
+
+Climate and weather-conditioned local wind velocities imply for the power generation not only significant temporal dependencies, but also significant spatial dependencies. As air masses influence one another in different scales, wind power generation in neighboring turbines tend to present higher correlations than turbines distant from one another (\cite{engeland2017variability}). Therefore, wind power generation is a phenomenon with dominant spatio-temporal dependencies.
 
 ## 2.2 Time Series Forecasting
 
 In \cite{bontempi2013strategies}, Bontenpi et al. define time series as "a sequence of historical measurements $y_t$ of an observable variable $y$ at equal time intervals". An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2020principles}.
 
-Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling and (c) outputs. In terms of inputs, one can use or not exogenous features, one or more input time series. In terms of modeling, one must define a resolution, can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish conventional from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
+Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g. hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish conventional from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
 
-In univariate forecasting 
-
-In multivariate forecasting, one aims to predict the value of a variable $y_{T+h}$ on the $h^{th}$ time-index after the last based on measurements for a set of variables $\boldsymbol{X}_{1:T}$ observed from time $t=1$ to $T$.  We denote by $h$ the time horizon for which the prediction is made, i.e. the $h^{th}$ time period after the last observation used to generate the forecasting model.
+In *univariate forecasting*, one aims to predict the value of a variable $y_{T+1}$ based on measurements $\boldsymbol{y} _{1:T} = \{y_1,…,y_T\}$. We denote by $\hat{y}_{T+1}$ the forecast value. More generally, one might be interested in forecasting for the  $h^{th}$ time period ahead. For a given task, $h$ is often referred to as the *forecast horizon*. In contrast to the univariate setting, *multivariate forecasting* models rely on historical observations not from a single but from several input variables, which can be expressed by a sequence of input vectors $\boldsymbol{X}_{1:T} = \{\boldsymbol{X}_1, ..., \boldsymbol{X}_T\}$. 
 
 ### 2.2.1 Forecasting Methods
 
-Analogous to AUTHOR in \cite{probabilistic}, we make distinction between method, model and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e. inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference).
+Analogous to Murphy in \cite{murphy2012probabilistic}, we make distinctions between method, model and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e. inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference).
 
 Example: simple methods
 
@@ -129,6 +149,10 @@ Metrics differ in interpretability, scale invariance, sensitivity to outliers, s
 Although often the most important one, accuracy is often just one of many requirements in a forecasting model development. In \cite{armstrong2002principles}, Armstrong reports that value inference time, cost savings resulting from improved decisions, interpretability, usability and ease of implementation tend to be of comparable importance to researchers, practitioners and decision makers.
 
 ## 2.3 Spatio-Temporal Forecasting
+
+Why spatio-temporal forecasting
+
+This spatio-temporal dependency in power generation thus suggests spatio-temporal   
 
 Approaches:
 
