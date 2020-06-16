@@ -118,7 +118,8 @@ Time Series Cross-Validation
 
 ![img](https://otexts.com/fpp2/fpp_files/figure-html/cv1-1.png)
 
-Time Series Cross-Validation
+- expanding window (figure)
+- out-of-sample cross-validation
 
 #### Metrics
 
@@ -182,13 +183,16 @@ Metrics differ in interpretability, scale invariance, sensitivity to outliers, s
 
 Although often the most important one, accuracy is often just one of many requirements in a forecasting model development. In \cite{armstrong2002principles}, Armstrong reports that value inference time, cost savings resulting from improved decisions, interpretability, usability, ease of implementation and development costs (human and computational resources) tend to be of comparable importance to researchers, practitioners and decision makers.
 
-2.2.3 Non-Trivial Forecasting Methods
+### 2.2.3 Non-Trivial Forecasting Methods
 
 \ref{fig-methods-overview}
 
 - Conventional
 
   - ARIMA
+    - AR
+    - MA
+    - ARIMA
   - ES
     - Simple Exponential Smoothing
     - Holt's Linear
@@ -235,11 +239,20 @@ b_t &= \beta^*(\ell_t - \ell_{t-1}) + (1-\beta^*)b_{t-1} &(growth) \\
 s_t &= \gamma y_t/(\ell_{t-1}+b_{t-1}) + (1-\gamma)s_{t-m} \ \ \ &(seasonal)
 \end{aligned}
 $$
-ARIMA (Auto-Regressive Integrated Moving Average) methods (\cite{box1970}) rely on repeatedly applying a difference operator to the observed values until the differenced series resemble a realization of some stationary stochastic process (\cite{brockwell2009methods}).  We denote by $\nabla^k(\cdot)$ the difference operator of order $k$. For $k=1$, $\nabla y_t = y_t - y_{t-1}$; for $k=2$, we have $\nabla^2(y_t) = \nabla(\nabla y_t) = \nabla y_t - \nabla y_{t-1} = y_t -2y_{t-1} + y_{t-2}$  and so forth.
+ARIMA (Autoregressive Integrated Moving Average) methods (\cite{box1970}) rely on repeatedly applying a difference operator to the observed values until the differenced series resemble a realization of some stationary stochastic process (\cite{brockwell2009methods}).  We denote by $\nabla^k(\cdot)$ the difference operator of order $k$. For $k=1$, $\nabla y_t = y_t - y_{t-1}$; for $k=2$, we have $\nabla^2(y_t) = \nabla(\nabla y_t) = \nabla y_t - \nabla y_{t-1} = y_t -2y_{t-1} + y_{t-2}$  and so forth. Another operator useful in ARIMA methods is the *backshift operator* $B^k(\cdot)$ with lag $k$. For $k=1$, we have $B y_t = y_{t-1}$. For $k=2$, $B^2(y_t) = B(B(y_t)) = y_{t-2}$.
 
-
-
-We describe some of the most known methods from the ARIMA and ES families.
+**AR (Autoregressive) Method. ** Linear regression with past values of the same variable (lagged values) as predictors. A constant level $c$ and a white noise $\varepsilon_t \sim WN(\mu_\varepsilon, \sigma^2_\varepsilon)$ are considered. Parameters: $\boldsymbol{\phi} = [\phi_1 \ \phi_2 \ \cdots \ \ \phi_p]^\top, \ \mu_\varepsilon, \ \sigma_\varepsilon, c$. Hyperparameter: $p$. 
+$$
+\hat{y}_t = c + \varepsilon_t + \phi_1 y_{t-1} + \phi_2 y_{t-2} + ... + \phi_p y_{t-p}
+$$
+**MA (Moving Average) Method.** Linear regression with lagged forecast errors $\varepsilon_\tau = \hat{y}_\tau - y_\tau$ as predictors. Parameters:$\boldsymbol{\theta} = [\theta_1 \ \theta_2 \ \cdots \ \ \theta_q]^\top, \ \mu_\varepsilon, \ \sigma_\varepsilon, c$. Hyperparameter: $q$.
+$$
+\hat{y}_t = c + \varepsilon_{t} + \theta_1 \varepsilon_{t-1} + \theta_2 \varepsilon_{t-2} + ... + \theta_q \varepsilon_{t-q}
+$$
+**(Non-seasonal) ARIMA Method.** Linear regression, with lagged *differenced* values $y_\tau'$ and lagged errors as predictors. It combines autoregression on the differenced time series with a moving average model, hence the name *Autoregressive Integrated Moving Average*, with *integration* referring to the reverse operation of differencing, used when reconstructing the original time series from its differenced version. Parameters:   $\boldsymbol{\phi} = [\phi_1 \ \phi_2 \ \cdots \ \ \phi_p]^\top,\boldsymbol{\theta} = [\theta_1 \ \theta_2 \ \cdots \ \ \theta_q]^\top, \ \mu_\varepsilon, \ \sigma_\varepsilon, c$. Hyperparameters: $p, d, q$.
+$$
+\hat{y}'_t = c + \varepsilon_t + \phi_1 y'_{t-1} + ... + \phi_p y'_{t-p} + \cdots + \theta_1 \varepsilon_{t-1} + ... + \theta_q \varepsilon_{t-q}
+$$
 
 ## 2.3 Spatio-Temporal Forecasting
 
