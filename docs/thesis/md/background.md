@@ -18,7 +18,7 @@ P = C_p \cdot \frac{\pi}{2} \rho \cdot A(D)\cdot v^3
 $$
 In this equation, $D$ and $H$ are design variables. The air density $\rho$ may vary during operation due to changes in air temperature, but its effects are often negligible. Finally, $C_p$, $v$ depend both on design (e.g. hub height $H$, blade profiles) and operation conditions (e.g. velocity speed and direction). 
 
-In operation, the dominant source of variability for the generated power is $v$. Being climate and weather-dependent, it is also the main reason for the intermittency and non-dispatchability of wind power (\cite{demeo2006natural}): it renders the power harvesting not only intermittent, but also not dispatchable at will. This dependence motivates the usage by designers and operators of the so-called *wind-to-power curves* (or simply *wind-power curves*), which are empirical relations that allow one to determine the generated power $P$ by knowing the wind velocity $v$ .
+In operation, the dominant source of variability for the generated power is $v$. Being climate and weather-dependent, it is also the main reason for the intermittency and non-dispatchability of wind power (\cite{demeo2006natural}): it renders the power harvesting not only intermittent, but also not dispatchable at will. This dependence motivates the usage by designers and operators of the so-called *wind-to-power curves* (or simply *power curves*), which are empirical relations that allow one to determine the generated power $P$ by knowing the wind velocity $v$ .
 
 As design, planning, operation, maintenance and trading wind power are subject to such high variabilities, forecasting wind power generation (WPG) is invaluable at different levels. Table \ref{table-forecasting-reqs} summarizes how different system operation aspects can profit from forecasts at different time scales. Power generation from single turbines can also be aggregated at different levels. Market operators, for example, profit the most from  from regional aggregations, since for energy trading this resolution is high enough, with higher resolutions across the same space scales of interests often too costly (\cite{jung2014forecasting}). In particular for countries such as Germany, where continental and national renewables-promoting public funding initiatives such as the *Energiewende* resulted in a high penetration of wind power in the grid, being able to accurately forecast wind power generation has tangible impact both environmentally and economically.
 
@@ -28,7 +28,7 @@ As design, planning, operation, maintenance and trading wind power are subject t
 
 Table ???. How WPG forecasting can generate value for operators, according to forecasting horizon (\cite{jung2014forecasting}). 
 
-The intermittency of renewables motivated an alternative representation for the power generation: the capacity factor (CF). CF is defined as the ratio of the actual generated power and the installed power. When considering WPG data across long timespans for both analysis and forecasting, it is usual that new commissionings take place, which manifests as a step disturbance into the overall generated power. In this case, CF can be useful as it is mostly insensitive to new installations. 
+The intermittency of renewables motivated an alternative representation for the power generation: the *capacity factor* (CF). CF is defined as the ratio of the actual generated power and the installed capacity. When considering WPG data across long timespans for both analysis and forecasting, it is usual that new commissionings take place, which manifests as a step disturbance into the overall generated power. In this case, CF can be useful as it is mostly insensitive to single new commissionings. 
 
 Climate and weather-conditioned local wind velocities imply for the power generation not only significant temporal dependencies, but also significant spatial dependencies. As air masses influence one another in different scales, wind power generation in neighboring turbines tend to present higher correlations than turbines distant from one another (\cite{engeland2017variability}). Therefore, wind power generation is a phenomenon with dominant spatio-temporal dependencies.
 
@@ -42,18 +42,30 @@ In *univariate forecasting*, one aims to predict the value of a variable $y_{T+1
 
 ### 2.2.1 Forecasting Methods
 
-Analogous to Murphy in \cite{murphy2012probabilistic}, we make distinctions between method, model and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e. inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference).
+Analogous to Murphy in \cite{murphy2012probabilistic}, we distinguish the concepts of method, model and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e. inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference).
 
-Example: simple methods
+We start by presenting simple forecasting methods, which are often used as baseline for other methods (\cite{hyndman2020principles}).
 
-- naive (random walk model) [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
-- seasonal naive [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
-
-- drift [[hyndman2020principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
-
+**Historical Average (HA) **method: forecasts assume all a constant value: the average of the historical data:
 $$
-\hat{y}_{t+1|t} = y_{t}
+\hat{y}_{T+h|T} = \frac{1}{T}\sum_{t=1}^Ty_t .
 $$
+**Naïve** method: this constant is the value from the last observation (\ref{eq-naive}). As the naïve forecast is the optimal prediction for a random walk process, it is also known as *random walk* method.
+$$
+\hat{y}_{T+h|T} = y_T
+$$
+**Seasonal** **Naïve** method: models the time series as harmonic with period $k$ observations (i.e. perfectly seasonal with seasonal period $k$), and for a given point  in future, suggest as forecast the last observed value from the same season (\ref{eq-snaive}). For example, all forecasts for future June values assume the value from the last observed June value. 
+$$
+\hat{y}_{T+h|T} = y_{T+h-k}
+$$
+**Drift** method: analogous to the naïve method, with the constant being not the  the last observed value itself but the average rate of change. 
+$$
+\hat{y}_{T+h|T} = y_{T} + h\left(\frac{y_T-y_1}{T-1} \right)
+$$
+
+- desired properties of residuals
+  - uncorrelated, as any correlation in residuals indicate 
+  - zero mean 
 
 getting better results – Generalities: minimizing residuals [[hyndman2020principles]](https://otexts.com/fpp2/accuracy.html)/loss on a training set
 
