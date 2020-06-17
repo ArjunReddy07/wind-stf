@@ -260,7 +260,9 @@ In a univariate, deterministic, one-step ahead, point-forecast time series forec
 $$
 [\boldsymbol{y}_{t-T+1}, \  \cdots\ , \boldsymbol{y}_{t}] \xrightarrow{f(\cdot)} \boldsymbol{y}_{t+1}
 $$
-For some forecasting problems such as the weather-conditioned wind power generation, the spatial dependency might play an important along with the temporal dependencies themselves (\cite{engeland2017variability}). In this work, we consider three different approaches to the ST forecasting problem. In a naïve approach, time series for different locations are modeled independently, thus neglecting spatial dependencies. In a second approach, the time series are modeled jointly via multivariate forecasting methods. Finally, we consider the explicit modeling of both spatial and temporal dependencies via graphical models. 
+For some forecasting problems such as the weather-conditioned wind power generation, the spatial dependency might play an important along with the temporal dependencies themselves (\cite{engeland2017variability}). In this work, we consider three different approaches to the ST forecasting problem. In a naïve approach, time series for different locations are modeled independently, thus neglecting spatial dependencies. In a second approach, the time series are modeled jointly via multivariate forecasting methods. Finally, we consider the explicit modeling of both spatial and temporal dependencies via graphical methods, which we introduce below. 
+
+**DCRNN (Diffusion Convolutional RNN).** Motivated by the traffic forecasting problem, where spatial dependencies are directional (non-Euclidean), Li et al. (\cite{li2018dcrnn}) recast the spatio-temporal evolution of a variable as a diffusion on a directed graph, where every node corresponds to a sensor. The learning process is performed via (1) convolutions on the graph, further integrated with a (2) seq-to-seq learning framework and a (3) scheduled sampling for modeling long-term dependencies.
 
 Approaches:
 
