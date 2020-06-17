@@ -48,7 +48,7 @@ In \cite{brockwell2016intro}, Brockwell & Davis define time series as "a set of 
 
 An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2018principles}. Time series forecasting permeates most aspects of modern business, such as business planning from production to distribution, to finance and marketing, inventory control and customer management (\cite{oreshkin2020nbeats}). In some business use cases, a single point in forecasting accuracy may represent millions of dollars (\cite{kahn2003apudOreshkin}, \cite{jain2017apudOreshkin}).  
 
-Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g., hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish conventional from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
+Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g., hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish statistical from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
 
 In *univariate forecasting*, one aims to predict the value of a variable $y_{T+1}$ based on measurements $\boldsymbol{y} _{1:T} = \{y_1,…,y_T\}$. We denote by $\hat{y}_{T+1}$ the forecast value. More generally, one might be interested in forecasting for the  $h$ time period ahead. For a given task, $h$ is often referred to as the *forecast horizon*. In contrast to the univariate setting, *multivariate forecasting* models rely on historical observations not from a single but from several input variables, which can be expressed by a sequence of input vectors $\boldsymbol{X}_{1:T} = \{\boldsymbol{X}_1, ..., \boldsymbol{X}_T\}$. 
 
@@ -56,9 +56,11 @@ In *univariate forecasting*, one aims to predict the value of a variable $y_{T+1
 
 Analogous to Murphy in \cite{murphy2012probabilistic}, we distinguish the concepts of method, model and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e. inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference). We denote by a model any unique configuration of parameters in a space defined by a method. Equivalently, a model represents a response surface (deterministic model) or the distribution of the response conditional on its inputs (probabilistic model).
 
-We start by presenting simple forecasting methods, which are often used as baseline for other methods (\cite{hyndman2018principles}).
+\ref{methods-overview} provide an overview of the methods reviewed in this work. We start by presenting simple forecasting methods, which are often used as baseline for other methods (\cite{hyndman2018principles}).
 
-**Historical Average (HA) method. Along wit**Forecast for any point assumes a constant value: the average of the historical data (\ref{eq-naive}).
+**![methods-overview](/home/jonasmmiguel/Desktop/methods-overview.png)**Fig. ???. Forecasting methods presented in this work. Most of these methods only model dependencies of temporal nature and are presented in this section. Exception are DCRNN, ST-GCN and Graph WaveNet (ML-based), presented in section \ref{spatio-temporal-forecasting}. They explicitly approach a more general forecasting setting where capturing both temporal and spatial dependencies is a major concern.   
+
+**Historical Average (HA) method. ** Forecast for any point assumes a constant value: the average of the historical data (\ref{eq-naive}).
 $$
 \hat{y}_{T+h|T} = \frac{1}{T}\sum_{t=1}^Ty_t
 $$
@@ -178,7 +180,7 @@ Although often the most important one, accuracy is often just one of many requir
 
 \ref{fig-methods-overview}
 
-Conventional approaches are characterized by the modeling of the time series as a realization of stationary stochastic process (\cite{brockwell2009}, \cite{bontenpi2013strategies}). The two most widely used families of conventional methods are the Exponential Smoothing (ES) family the ARIMA family (\cite{hyndman2018principles}). 
+Statistical forecasting approaches are characterized by the modeling of the time series as a realization of stationary stochastic process (\cite{brockwell2009}, \cite{bontenpi2013strategies}). The two most widely used families of statistical methods are the Exponential Smoothing (ES) family the ARIMA family (\cite{hyndman2018principles}). 
 
 In the ES approach, time series is modeled as combination of  interpretable components \cite{brockwell2009}. In the *classical decomposition* (\cite{makridakis1998}), these components are trend component $m$, seasonal component $d$ and random noise (*white noise*) $y_t$, which are linearly combined to reconstruct the time series:
 $$
@@ -186,11 +188,11 @@ y_t = m_t + s_t + a_t .
 $$
 We now describe some of the most known methods from the ES family.
 
-**Simple Exponential Smoothing Method.** Predicts for the next period the forecast value for the previous period, adjusting it using the forecast error. Parameter: $\alpha \in \mathbb{R}_{[0,1]}$.
+**SES (Simple Exponential Smoothing Method)** predicts for the next period the forecast value for the previous period, adjusting it using the forecast error. Parameter: $\alpha \in \mathbb{R}_{[0,1]}$.
 $$
 \hat{y}_{t+1} = \hat{y}_{t} + \alpha(\hat{y}_{t} - \hat{y}_{t-1}) \\
 $$
-**Holt's Linear Method.** Features an additive trend component.  (\cite{hyndman2008es}). Parameters: $(\alpha, \beta^*) \in \mathbb{R}^2_{[0,1]}$
+**Holt's Linear Method** features an additive trend component.  (\cite{hyndman2008es}). Parameters: $(\alpha, \beta^*) \in \mathbb{R}^2_{[0,1]}$
 $$
 \begin{align}
 \hat{y}_{t+h|t} &= \ell_t + b_th, \\
@@ -198,7 +200,7 @@ where\ \  \ell_t &= \alpha y_t + (1-\alpha)(\ell_{t-1}+b_{t-1}) \ \ \ \ \ \ (lev
 b_t &= \beta^*(\ell_t - \ell_{t-1}) + (1-\beta^*)b_{t-1} \ \ \ (growth)
 \end{align}
 $$
-**Holt-Winters' Method.** Features additive trend and multiplicative seasonality components, for a seasonality length $m$, and forecasting horizon $h$. Parameters: $(\alpha, \beta^*,\gamma) \in \mathbb{R}^3_{[0,1]}$ (usual bounds, refer to \cite{hyndman2008es} for details). 
+**Holt-Winters' Method** features additive trend and multiplicative seasonality components, for a seasonality length $m$, and forecasting horizon $h$. Parameters: $(\alpha, \beta^*,\gamma) \in \mathbb{R}^3_{[0,1]}$ (usual bounds, refer to \cite{hyndman2008es} for details). 
 $$
 \begin{aligned}
 \hat{y}_{t+h|t} = (&\ell_t + b_th)s_{t-m+h^+_m}, \\
@@ -221,7 +223,7 @@ $$
 $$
 \hat{y}'_t = c + \varepsilon_t + \phi_1 y'_{t-1} + ... + \phi_p y'_{t-p} + \cdots + \theta_1 \varepsilon_{t-1} + ... + \theta_q \varepsilon_{t-q}
 $$
-Approaches solely based on Machine Learning struggled until recently to consistently outperform conventional time series forecasting approaches (\cite{makridakis2018waysforward}).  Despite relying on biased evidence (e.g., models were evaluated across all time series without any sound choice nor search for hyperparameters), Makridakis claimed in \cite{makridakis2019ml} that "hybrid approaches and combinations of methods are the way forward for improving the forecasting accuracy and making forecasting more valuable". Oreshkin et al. challenged in \cite{bengio2020nbeats} this conclusion, introducing N-BEATS, a pure deep learning method that not only outperformed conventional and hybrid methods, but also allowed high interpretability of intermediate outputs. 
+Approaches solely based on Machine Learning struggled until recently to consistently outperform statistical time series forecasting approaches (\cite{makridakis2018waysforward}).  Despite relying on biased evidence (e.g., models were evaluated across all time series without any sound choice nor search for hyperparameters), Makridakis claimed in \cite{makridakis2019ml} that "hybrid approaches and combinations of methods are the way forward for improving the forecasting accuracy and making forecasting more valuable". Oreshkin et al. challenged in \cite{bengio2020nbeats} this conclusion, introducing N-BEATS, a pure deep learning method that not only outperformed statistical and hybrid methods, but also allowed high interpretability of intermediate outputs. 
 
 Below we present selected deep learning methods helpful for understanding current state-of-the-art approaches for both wind power generation-specific applications and in general univariate time series forecasting applications. 
 
@@ -243,7 +245,12 @@ Fig ???. Basic LSTM architecture in its unfolded representation (adapted from \c
 
 Fig ???. NBEATS architecture.
 
-Hybrid methods combine machine learning and conventional approaches by using the outputs from statistical engines as features \cite{bengio2020nbeats}. Below we present ES-RNN, a hybrid method winner of the 2017 M4 forecasting competition.
+- Historival Average
+- Naïve
+- Seasonal Naïve
+- Drift
+
+Hybrid methods combine machine learning and statistical approaches by using the outputs from statistical engines as features \cite{bengio2020nbeats}. Below we present ES-RNN, a hybrid method winner of the 2017 M4 forecasting competition.
 
 **ES-RNN.** It uses Holt-Winters' ES method as statistical engine for capturing the seasonal and level components from the time series into features, which are then used by a LSTM model to exploit non-linear dependencies.
 $$
