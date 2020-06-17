@@ -1,4 +1,12 @@
-## 2.1 Wind Power Generation
+## 2.1. Liberalized Electricity Markets
+
+In a liberalized electricity market, multiple entities are involved in supplying energy to final consumers, as \ref{fig-electricity-grid-players} illustrates. In EU, these parties are electricity generators, transmission system operators (TSO), distribution system operator (DSO), electricity supplier and regulator (\cite{erbach2016market}). TSOs are responsible for long-distance transport of energy and for balancing supply and demand in timeframes under quarter-hour. Imbalances of this nature imply in deviations from the nominal frequency and eventually in shortages. DSOs are responsible for delivering electricity to consumers. Electricity suppliers buy energy from generator parties and resell it to consumers.
+
+![image-20200617060458953](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200617060458953.png)
+
+Fig. ???. The different stages of electricity supply and the responsible parties in a liberalized market. 
+
+## 2.2 Wind Power Generation
 
 In 1920, Betz (\cite{betz1920maximum}) modeled a generic wind harvesting system as an open-disc actuator and, by using energy conservation equation for a stream tube flowing through this disk, he derived an upper limit for the power harvested by a horizontal-axis wind turbine. The *Betz Limit*, as it is known, is a function of rotor diameter $D$ (via the rotor swept area $A$) and the average free stream wind velocity $v$ at hub height $H$ (\ref{eq-betz-limit}).
 $$
@@ -18,12 +26,6 @@ In operation, the dominant source of variability for the generated power is $v$.
 
 As design, planning, operation, maintenance, and trading of wind power are subject to such high variabilities, forecasting wind power generation (WPG) provides value for the different players in the electricity grid, illustrated in \ref{fig-electricity-grid-players}.  Table \ref{table-forecasting-reqs} gives several examples on how various system operation aspects can profit from forecasts at different time scales. 
 
-In a liberalized electricity market, multiple entities are involved in supplying energy to final consumers, as \ref{fig-electricity-grid-players} illustrates. In EU, these parties are electricity generators, transmission system operators (TSO), distribution system operator (DSO), electricity supplier and regulator (\cite{erbach2016market}). TSOs are responsible for long-distance transport of energy and for balancing supply and demand in timeframes under quarter-hour. Imbalances of this nature imply in deviations from the nominal frequency and eventually in shortages. DSOs are responsible for delivering electricity to consumers. Electricity suppliers buy energy from generator parties and resell it to consumers.
-
-![image-20200617060458953](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200617060458953.png)
-
-Fig. ???. The different stages of electricity supply and the responsible parties in a liberalized market. 
-
 Power generation from single turbines can also be aggregated at different levels. Market operators, for example, profit the most from regional aggregations, since for energy trading, this resolution is sufficiently high, with higher resolutions across the same space scales of interests often too costly (\cite{jung2014forecasting}). 
 
 In particular for countries such as Germany, where continental and national renewables-promoting public funding initiatives such as the *Energiewende* resulted in high penetration of wind power in the grid, being able to accurately forecast wind power generation has a tangible impact both environmentally and economically.
@@ -38,9 +40,9 @@ The intermittency of renewables motivated an alternative measure of power genera
 
 Climate and weather-conditioned local wind velocities imply for the power generation not only significant temporal dependencies but also significant spatial dependencies. As air masses influence one another in different scales, wind power generation in neighboring turbines tends to present higher correlations than turbines distant from one another (\cite{engeland2017variability}). Therefore, wind power generation is a phenomenon with dominant spatio-temporal dependencies.
 
-\cite{} Different approaches exist for forecasting wind power generation
+Usual approaches to forecasting wind power generation are physical, statistical and machine learning-based (\cite{jung2014forecasting}). The physical approach relies on the modeling of the power curve using Computational Fluid Dynamic (CFD) models, taking Numerical Weather Prediction (NWP) as inputs for defining the boundary conditions. Main limitations of this approach are (a) the high costs involved in the development of such models, along with (b) the large uncertainties entailed by the NWP data. The statistical approach uses historical data and statistical time series models to produce forecasts for wind speed, which is then used in the power curve for forecasting the power generation itself. Finally, in machine learning approaches, one uses historical data for wind speed or power generation, eventually combined with historical data of weather conditions to forecast either (a) local wind speeds, with their subsequent transformation into generated power via power-curve or (b) generated power directly.  
 
-## 2.2 Time Series Forecasting
+## 2.3 Time Series Forecasting
 
 In \cite{brockwell2016intro}, Brockwell & Davis define time series as "a set of observations $y_t$, each one being recorded at a specific time $t$". When observations are recorded at discrete times, they are called a discrete-time time series, on which we focus this work. 
 
@@ -252,7 +254,7 @@ s_t &= \gamma y_t/\ell_{t} + (1-\gamma)s_{t-m} \ \ \ &(seasonal)
 \end{aligned}
 $$
 
-## 2.3 Spatio-Temporal Forecasting
+## 2.4 Spatio-Temporal Forecasting
 
 In a univariate, deterministic, one-step ahead, point-forecast time series forecasting problem, one is interested in obtaining a function $f: \mathbb{R}^T \rightarrow \mathbb{R}$ that maps historical observations of a variable $y_t$ to its value in the next timestep. In the spatio-temporal (ST) version of this problem, one aims to attain a function $f: \mathbb{R}^{|V|\times T} \rightarrow \mathbb{R}^{|V|}$ which maps historical observations of a quantity across different regions $v\in V$, $\boldsymbol{y}_t = [y_{1,t}\  \  y_{2,t}\ \ \cdots \ \ y_{|V|,t}]^\top$ ,  to its value $\boldsymbol{y}_{t+1}$ in the next timestep  (\ref{eq-spatio-temporal-forecasting}). 
 $$
