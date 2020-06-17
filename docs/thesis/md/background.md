@@ -44,7 +44,9 @@ Climate and weather-conditioned local wind velocities imply for the power genera
 
 ## 2.2 Time Series Forecasting
 
-In \cite{brockwell2016intro}, Brockwell & Davis define time series as "a set of observations $y_t$, each one being recorded at a specific time $t$". When observations are recorded at discrete times, they are called a discrete-time time series, on which we focus this work. An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2018principles}.
+In \cite{brockwell2016intro}, Brockwell & Davis define time series as "a set of observations $y_t$, each one being recorded at a specific time $t$". When observations are recorded at discrete times, they are called a discrete-time time series, on which we focus this work. 
+
+An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2018principles}. Time series forecasting permeates most aspects of modern business, such as business planning from production to distribution, to finance and marketing, inventory control and customer management (\cite{oreshkin2020nbeats}). A single point in forecasting accuracy may represent millions of dollars (\cite{kahn2003apudOreshkin}, \cite{jain2017apudOreshkin}).  
 
 Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g. hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish conventional from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
 
@@ -96,17 +98,6 @@ $$
 - Quantifying generalization error via performance metrics
 
 - As models have parameters, so do methods have their own, often referred as *hyperparameters*. They may control the space of model parameters configurations, the model inference process or eventually the loss function (\cite{hutter2019automated}). Hyperparameters may have a major influence on model performance. When besides the model parameters themselves, we also search for the parameters from its parent method, yet another partition becomes necessary in order to attain a minimally unbiased estimate of the resulting generalization errors. When working with three partitions, one for model inference, another for assessing its generalization error given a hyperparameters configuration and another one for assessing it across different hyperparameters configurations, authors often refer to them as training, validation and test set, respectively.
-
-- (univariate) conventional 
-
-  - ARIMA
-  - ES: from SES to Holt-Winters [[hyndman2018principles]](Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.), [[chen2019dl-tsf](file:///C:/Users/User/Downloads/fvm939e.pdf)]
-- hybrid
-
-  - ES-RNN
-- DL-based
-
-  - N-BEATS
 
 ### 2.2.2 Model Evaluation / Evaluating Models Performance
 
@@ -187,32 +178,9 @@ Although often the most important one, accuracy is often just one of many requir
 
 \ref{fig-methods-overview}
 
-- Conventional
-
-  - ARIMA
-    - AR
-    - MA
-    - ARIMA
-  - ES
-    - Simple Exponential Smoothing
-    - Holt's Linear
-    - Holt-Winter's Additive Multiplicative
-
-- Machine Learning
-
-  - RNN
-  - CNN
-  - N-Beats
-
-- Hybrid
-
-  - ES-RNN
-
-  
-
 Conventional approaches are characterized by the modeling of the time series as a realization of stationary stochastic process (\cite{brockwell2009}, \cite{bontenpi2013strategies}). The two most widely used families of conventional methods are the Exponential Smoothing (ES) family the ARIMA family (\cite{hyndman2018principles}). 
 
- In the ES approach, time series is modeled as combination of  interpretable components \cite{brockwell2009}. In the *classical decomposition* (\cite{makridakis1998}), these components are trend component $m_t$, seasonal component $d$ and random noise (*white noise*) $y_t$, which are linearly combined to reconstruct the time series:
+In the ES approach, time series is modeled as combination of  interpretable components \cite{brockwell2009}. In the *classical decomposition* (\cite{makridakis1998}), these components are trend component $m$, seasonal component $d$ and random noise (*white noise*) $y_t$, which are linearly combined to reconstruct the time series:
 $$
 y_t = m_t + s_t + a_t .
 $$
@@ -230,7 +198,7 @@ where\ \  \ell_t &= \alpha y_t + (1-\alpha)(\ell_{t-1}+b_{t-1}) \ \ \ \ \ \ (lev
 b_t &= \beta^*(\ell_t - \ell_{t-1}) + (1-\beta^*)b_{t-1} \ \ \ (growth)
 \end{align}
 $$
-**Holt-Winters' Method.** Features additive trend and multiplicative seasonality components, for a seasonality length $m$, and $h^+_m = [(h-1)\mod m]+1$. Parameters: $(\alpha, \beta^*,\gamma) \in \mathbb{R}^3_{[0,1]}$ (usual bounds, refer to \cite{hyndman2008es} for details). 
+**Holt-Winters' Method.** Features additive trend and multiplicative seasonality components, for a seasonality length $m$, and forecasting horizon $h$. Parameters: $(\alpha, \beta^*,\gamma) \in \mathbb{R}^3_{[0,1]}$ (usual bounds, refer to \cite{hyndman2008es} for details). 
 $$
 \begin{aligned}
 \hat{y}_{t+h|t} = (&\ell_t + b_th)s_{t-m+h^+_m}, \\
@@ -253,12 +221,48 @@ $$
 $$
 \hat{y}'_t = c + \varepsilon_t + \phi_1 y'_{t-1} + ... + \phi_p y'_{t-p} + \cdots + \theta_1 \varepsilon_{t-1} + ... + \theta_q \varepsilon_{t-q}
 $$
+Approaches solely based on Machine Learning struggled until recently to consistently outperform conventional time series forecasting approaches (\cite{makridakis2018waysforward}).  Despite relying on biased evidence (e.g. models were evaluated across all time series without any sound choice nor search for hyperparameters), Makridakis claimed in \cite{makridakis2019ml} that "hybrid approaches and combinations of methods are the way forward for improving the forecasting accuracy and making forecasting more valuable". Oreshkin et al. challenged in \cite{bengio2020nbeats} this conclusion, introducing N-BEATS, a pure deep learning method that not only outperformed conventional and hybrid methods, but also allowed high interpretability of intermediate outputs. 
+
+Below we present selected deep learning methods helpful for understanding current state-of-the-art approaches for both wind power generation-specific applications and in general univariate time series forecasting applications. 
+
+**RNN (Recurrent Neural Network).** Uses the recurrent layer as building block (\ref{fig-rnn}), implemented over a sequence of steps. Successive hidden states between layers are related by the so-called *Markov dependence* (\cite{battaglia2020gnn}). This allows RNN to capture dependencies in sequential data. However, in its basic design, RNN is often unable to incorporate dependencies that span over more than a few timesteps due most importantly due to vanishing gradients. Every block concatenates the last hidden state with the current input, passing the result to an activation function. The result is carried forward as the updated hidden state. 
+
+![http://colah.github.io/posts/2015-08-Understanding-LSTMs/img/LSTM3-SimpleRNN.png](http://colah.github.io/posts/2015-08-Understanding-LSTMs/img/LSTM3-SimpleRNN.png)
+
+Fig ???. The basic RNN architecture in its unfolded representation. Arrows indicate transfers of input and hidden states (adapted from \cite{http://colah.github.io/posts/2015-08-Understanding-LSTMs/}).  
+
+**LSTM (Long-Short Term Memory).** A type of RNN, improves on its basic design  most importantly by the cell state transfer (superior horizontal line inside the repeating module in /ref{fig-lstm}), which allows information to be persist across many transitions of cell states. Instead of a single layer, each cell presents four layers interacting in a way that defines how the old cell state, the old state from new hidden state from the previous unit. For instance, in the leftmost vertical channel, the forget gate (sigmoid layer in /ref{fig-lstm}) controls how much from the old cell state should be used to define the new cell state. The rightmost layer represents the output gate, which controls how much of the current cell state should be passed the current hidden state modifies the next updated state. 
+
+![http://colah.github.io/posts/2015-08-Understanding-LSTMs/img/LSTM3-chain.png](http://colah.github.io/posts/2015-08-Understanding-LSTMs/img/LSTM3-chain.png)
+
+Fig ???. Basic LSTM architecture in its unfolded representation (adapted from \cite{http://colah.github.io/posts/2015-08-Understanding-LSTMs/}).
+
+**NBEATS.** Uses as basic building block a multi-layer fully connected network with ReLU nonlinearities, which feed basis layers that generate a backcast and a forecast output. Blocks are arranged into stacks, organized to form a model.  Models resulting from this architecture consistently outperformed state-of-the-art methods for univariate forecasting across different horizons and thousands of time series datasets of different nature, while using a a single hyperparameter configuration (\cite{bengio2020nbeats}).  
+
+![image-20200616201550854](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200616201550854.png)
+
+Fig ???. NBEATS architecture.
+
+Hybrid methods combine machine learning and conventional approaches by using the outputs from statistical engines as features \cite{bengio2020nbeats}. Below we present ES-RNN, a hybrid method winner of the 2017 M4 forecasting competition.
+
+**ES-RNN.** It uses Holt-Winters' ES method as statistical engine for capturing the seasonal and level components from the time series into features, which are then used by a LSTM model to exploit non-linear dependencies.
+$$
+\begin{aligned}
+\hat{y}_{t+h|t} = LS&TM(y_t,\ell_t, s_t)\\
+where \ \ \ell_t &= \alpha \frac{y_t}{s_{t-m}} + (1-\alpha)\ell_{t-1}   &(level) \\
+s_t &= \gamma y_t/\ell_{t} + (1-\gamma)s_{t-m} \ \ \ &(seasonal)
+\end{aligned}
+$$
 
 ## 2.3 Spatio-Temporal Forecasting
 
 Why spatio-temporal forecasting
 
 This spatio-temporal dependency in power generation thus suggests spatio-temporal   
+
+Define  the task mathematically – see my literature review slides
+
+In this work, we consider three different approaches to the ST forecasting problem. In a naive approach, time series for different locations are modeled independently, thus neglecting spatial dependencies. In a second approach, the time series are modeled jointly via multivariate methods. Finally, we consider the explicit modeling of both spatial and temporal dependencies via deep learning
 
 Approaches:
 
