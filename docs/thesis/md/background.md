@@ -16,29 +16,29 @@ Due to losses such as those associated to (1) momentum deficit in lower atmosphe
 $$
 P = C_p\eta_{m} \eta_{e}  \cdot \frac{1}{2}\rho \cdot A(D)\cdot v^3
 $$
-In this equation, $D$ and $H$ are design variables. The air density $\rho$ may vary during operation due to changes in air temperature, but its effects are often negligible. Finally, $C_p$, $v$ depend both on design (e.g. hub height $H$, blade profiles) and operation conditions (e.g. velocity speed and direction). 
+In this equation, $D$ and $H$ are design variables. The air density $\rho$ may vary during operation due to changes in air temperature, but its effects are often negligible. Finally, $C_p$, $v$ depend both on design (e.g., hub height $H$, blade profiles) and operation conditions (e.g., velocity speed and direction). 
 
 ![https://www.researchgate.net/profile/Marcelo_Molina/publication/221911675/figure/fig2/AS:304715268149248@1449661189252/General-description-of-a-wind-turbine-system-The-appropriate-voltage-level-is-related-to.png](https://www.researchgate.net/profile/Marcelo_Molina/publication/221911675/figure/fig2/AS:304715268149248@1449661189252/General-description-of-a-wind-turbine-system-The-appropriate-voltage-level-is-related-to.png)
 
 Fig ???. The different stages of the overall wind power conversion process (adapted from \cite{}). 
 
-In operation, the dominant source of variability for the generated power is $v$. Being climate and weather-dependent, it is also the main reason for the intermittency and non-dispatchability of wind power (\cite{demeo2006natural}). Moreover, this dependence motivates the usage by designers and generation operators of the so-called *wind-to-power curves* (or simply *power curves*), which are empirical relations that allow one to determine the generated power $P$ by knowing the wind velocity $v$ .
+In operation, the dominant source of variability for the generated power is $v$. Being climate and weather-dependent, it is also the main reason for the intermittency and non-dispatchability of wind power (\cite{demeo2006natural}). This dependence motivates the usage by designers and generation operators of the so-called *wind-to-power curves* (or *power curves*), which are empirical relations that allow one to determine the generated power $P$ by knowing the wind velocity $v$ .
 
-As design, planning, operation, maintenance and trading of wind power are subject to such high variabilities, forecasting wind power generation (WPG) provides value for the different players in the electricity grid, illustrated in \ref{fig-electricity-grid-players}.  Table \ref{table-forecasting-reqs} summarizes how different system operation aspects can profit from forecasts at different time scales. Power generation from single turbines can also be aggregated at different levels. 
+As design, planning, operation, maintenance, and trading of wind power are subject to such high variabilities, forecasting wind power generation (WPG) provides value for the different players in the electricity grid, illustrated in \ref{fig-electricity-grid-players}.  Table \ref{table-forecasting-reqs} summarizes how various system operation aspects can profit from forecasts at different time scales. Power generation from single turbines can also be aggregated at different levels. 
 
 - energy balance: preventing supply shortages and changes in frequency.
 
-Market operators, for example, profit the most from  from regional aggregations, since for energy trading this resolution is high enough, with higher resolutions across the same space scales of interests often too costly (\cite{jung2014forecasting}). In particular for countries such as Germany, where continental and national renewables-promoting public funding initiatives such as the *Energiewende* resulted in a high penetration of wind power in the grid, being able to accurately forecast wind power generation has tangible impact both environmentally and economically.
+Market operators, for example, profit the most from regional aggregations, since for energy trading, this resolution is sufficiently high, with higher resolutions across the same space scales of interests often too costly (\cite{jung2014forecasting}). In particular for countries such as Germany, where continental and national renewables-promoting public funding initiatives such as the *Energiewende* resulted in high penetration of wind power in the grid, being able to accurately forecast wind power generation has a tangible impact both environmentally and economically.
 
 | Very short <br />($\sim secs\ - 0.5h $) | short <br />($0.5h - 72h$) | medium<br />($72h\ – 1\ week $)               | long<br />($1\ week\  – 1\ year $) |
 | --------------------------------------- | -------------------------- | --------------------------------------------- | ---------------------------------- |
 | turbine control, <br />load tracking    | pre-load sharing           | power system management, <br />energy trading | turbines maintenance scheduling    |
 
-Table ???. How WPG forecasting can generate value for generation operators, according to forecasting horizon (\cite{jung2014forecasting}). 
+Table ???. How WPG forecasting can generate value for generation operators, according to the forecasting horizon (\cite{jung2014forecasting}). 
 
 The intermittency of renewables motivated an alternative measure of power generation: the *capacity factor* (CF). CF is defined as the ratio of the actual generated power and the installed capacity. When considering WPG data across long timespans for both analysis and forecasting, it is usual that new commissionings take place, which manifests itself as a step perturbation into the overall generated power. In this case, CF can be useful as it is mostly insensitive to single new commissionings. 
 
-Climate and weather-conditioned local wind velocities imply for the power generation not only significant temporal dependencies, but also significant spatial dependencies. As air masses influence one another in different scales, wind power generation in neighboring turbines tend to present higher correlations than turbines distant from one another (\cite{engeland2017variability}). Therefore, wind power generation is a phenomenon with dominant spatio-temporal dependencies.
+Climate and weather-conditioned local wind velocities imply for the power generation not only significant temporal dependencies but also significant spatial dependencies. As air masses influence one another in different scales, wind power generation in neighboring turbines tends to present higher correlations than turbines distant from one another (\cite{engeland2017variability}). Therefore, wind power generation is a phenomenon with dominant spatio-temporal dependencies.
 
 \cite{} Different approaches exist for forecasting wind power generation
 
@@ -48,7 +48,7 @@ In \cite{brockwell2016intro}, Brockwell & Davis define time series as "a set of 
 
 An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2018principles}. Time series forecasting permeates most aspects of modern business, such as business planning from production to distribution, to finance and marketing, inventory control and customer management (\cite{oreshkin2020nbeats}). In some business use cases, a single point in forecasting accuracy may represent millions of dollars (\cite{kahn2003apudOreshkin}, \cite{jain2017apudOreshkin}).  
 
-Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g. hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish conventional from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
+Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g., hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish conventional from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
 
 In *univariate forecasting*, one aims to predict the value of a variable $y_{T+1}$ based on measurements $\boldsymbol{y} _{1:T} = \{y_1,…,y_T\}$. We denote by $\hat{y}_{T+1}$ the forecast value. More generally, one might be interested in forecasting for the  $h$ time period ahead. For a given task, $h$ is often referred to as the *forecast horizon*. In contrast to the univariate setting, *multivariate forecasting* models rely on historical observations not from a single but from several input variables, which can be expressed by a sequence of input vectors $\boldsymbol{X}_{1:T} = \{\boldsymbol{X}_1, ..., \boldsymbol{X}_T\}$. 
 
@@ -120,7 +120,7 @@ e_{T+h} = y_{T+h} - \hat{y}_{T+h|T},
 $$
 for a training dataset $\{y_1,…,y_T\}$ and a test dataset $\{y_{T+1}, y_{T+2},…\}$.
 
-Many different metrics exist, each one conveying one aspect of the error distribution. Some of the most usual definitions  are presented from \ref{eq-rmse} to \{eq-} (see e.g. \cite{wu2019graphwavenet}, \cite{liu2019st-mgcn},  \cite{hyndman2006metrics}). In particular, $MASE$ and $MdRAE$ use as denominator the forecast errors of the naïve model, which takes the last known value to forecast the next point. The naïve model can be shown to be optimal for a random walk process (\cite{hyndman2006metrics}).
+Many different metrics exist, each one conveying one aspect of the error distribution. Some of the most usual definitions  are presented from \ref{eq-rmse} to \{eq-} (see e.g., \cite{wu2019graphwavenet}, \cite{liu2019st-mgcn},  \cite{hyndman2006metrics}). In particular, $MASE$ and $MdRAE$ use as denominator the forecast errors of the naïve model, which takes the last known value to forecast the next point. The naïve model can be shown to be optimal for a random walk process (\cite{hyndman2006metrics}).
 $$
 RMSE = \sqrt{\mathbb{E}(e_t^2)} = \sqrt{\frac{1}{N}\sum_{t=1}^N e^2_t}
 $$
@@ -221,7 +221,7 @@ $$
 $$
 \hat{y}'_t = c + \varepsilon_t + \phi_1 y'_{t-1} + ... + \phi_p y'_{t-p} + \cdots + \theta_1 \varepsilon_{t-1} + ... + \theta_q \varepsilon_{t-q}
 $$
-Approaches solely based on Machine Learning struggled until recently to consistently outperform conventional time series forecasting approaches (\cite{makridakis2018waysforward}).  Despite relying on biased evidence (e.g. models were evaluated across all time series without any sound choice nor search for hyperparameters), Makridakis claimed in \cite{makridakis2019ml} that "hybrid approaches and combinations of methods are the way forward for improving the forecasting accuracy and making forecasting more valuable". Oreshkin et al. challenged in \cite{bengio2020nbeats} this conclusion, introducing N-BEATS, a pure deep learning method that not only outperformed conventional and hybrid methods, but also allowed high interpretability of intermediate outputs. 
+Approaches solely based on Machine Learning struggled until recently to consistently outperform conventional time series forecasting approaches (\cite{makridakis2018waysforward}).  Despite relying on biased evidence (e.g., models were evaluated across all time series without any sound choice nor search for hyperparameters), Makridakis claimed in \cite{makridakis2019ml} that "hybrid approaches and combinations of methods are the way forward for improving the forecasting accuracy and making forecasting more valuable". Oreshkin et al. challenged in \cite{bengio2020nbeats} this conclusion, introducing N-BEATS, a pure deep learning method that not only outperformed conventional and hybrid methods, but also allowed high interpretability of intermediate outputs. 
 
 Below we present selected deep learning methods helpful for understanding current state-of-the-art approaches for both wind power generation-specific applications and in general univariate time series forecasting applications. 
 
@@ -260,18 +260,23 @@ In a univariate, deterministic, one-step ahead, point-forecast time series forec
 $$
 [\boldsymbol{y}_{t-T+1}, \  \cdots\ , \boldsymbol{y}_{t}] \xrightarrow{f(\cdot)} \boldsymbol{y}_{t+1}
 $$
-For some forecasting problems such as the weather-conditioned wind power generation, the spatial dependency might play an important along with the temporal dependencies themselves (\cite{engeland2017variability}). In this work, we consider three different approaches to the ST forecasting problem. In a naïve approach, time series for different locations are modeled independently, thus neglecting spatial dependencies. In a second approach, the time series are modeled jointly via multivariate forecasting methods. Finally, we consider the explicit modeling of both spatial and temporal dependencies via graphical methods, which we introduce below. 
+For some forecasting problems such as the weather-conditioned wind power generation, the spatial dependency might play an important along with the temporal dependencies themselves (\cite{engeland2017variability}). In this work, we consider three different approaches to the ST forecasting problem. In a naïve approach, time series for different locations are modeled independently, thus neglecting spatial dependencies. In a second approach, the time series are modeled jointly via multivariate forecasting methods. Finally, we consider the explicit modeling of both spatial and temporal dependencies via dynamic graphs. The methods presented below illlustrate the latter approach.
 
-**DCRNN (Diffusion Convolutional RNN).** Motivated by the traffic forecasting problem, where spatial dependencies are directional (non-Euclidean), Li et al. (\cite{li2018dcrnn}) recast the spatio-temporal evolution of a variable as a diffusion on a directed graph, where every node corresponds to a sensor. The learning process is performed via (1) convolutions on the graph, further integrated with a (2) seq-to-seq learning framework and a (3) scheduled sampling for modeling long-term dependencies.
+**DCRNN (Diffusion Convolutional RNN).** RNN is leveraged by replacing the matrix multiplication by a diffusion convolution (\cite{liu2020intro}). Motivated by the traffic forecasting problem, where spatial dependencies are directional (non-Euclidean), Li et al. (\cite{li2018dcrnn}) recast the spatio-temporal evolution of a variable as a diffusion on a directed graph, where every node corresponds to a sensor. Learning is performed via (1) diffusion convolution, further integrated with a (2) seq-to-seq learning framework and a (3) scheduled sampling for modeling long-term dependencies (\ref{fig-dcrnn}). 
 
-Approaches:
+![image-20200616234156789](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200616234156789.png)
 
-- model TS individually
-- model TS together (multivariate TS approach) via Multivariate versions
-  - VARIMA
-- model ST behavior via DL-methods\cite{armstrong2002principles}
-  - DCRNN
-  - Graph WaveNet [see liu2020gnn]
+Fig ???. The DCRNN architecture.
+
+**ST-GCN**. A spatial-temporal graph is generated by stacking graph frames from all timesteps, each frame representing the graph state at a specific time. The spatial-temporal graph is partitioned and to each of its nodes is assigned a weight vector.   Finally, a graph convolution is performed on the weighted spatial-temporal graph.
+
+![image-20200616235706340](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200616235706340.png)
+
+**Graph WaveNet.** Uses as building blocks a Temporal Convolution Network (TCN) and a Graph Convolution Network (GCN) for capturing spatio-temporal dependencies in every module. A core idea is the usage of a learnable self-adaptative adjacency matrix, which allow node dependencies to change over time and not necessarily be determined by their distances. (\cite{wu2019graphwavenet}, \cite{liu2020intro}).
+
+![image-20200617004620751](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200617004620751.png)
+
+Fig. ??? The Graph WaveNet architecture. 
 
 ### 2.3.1 Metrics
 
