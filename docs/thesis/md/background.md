@@ -1,11 +1,3 @@
-## Our Hypothesis
-
-As 
-
-___
-
-
-
 ## 2.1 Wind Power Generation
 
 In 1920, Betz (\cite{betz1920maximum}) modeled a generic wind harvesting system as an open-disc actuator and, by using energy conservation equation for a stream tube flowing through this disk, he derived an upper limit for the power harvested by a horizontal-axis wind turbine. The *Betz Limit*, as it is known, is a function of rotor diameter $D$ (via the rotor swept area $A$) and the average free stream wind velocity $v$ at hub height $H$ (\ref{eq-betz-limit}).
@@ -22,13 +14,19 @@ In this equation, $D$ and $H$ are design variables. The air density $\rho$ may v
 
 Fig ???. The different stages of the overall wind power conversion process (adapted from \cite{}). 
 
-In operation, the dominant source of variability for the generated power is $v$. Being climate and weather-dependent, it is also the main reason for the intermittency and non-dispatchability of wind power (\cite{demeo2006natural}). This dependence motivates the usage by designers and generation operators of the so-called *wind-to-power curves* (or *power curves*), which are empirical relations that allow one to determine the generated power $P$ by knowing the wind velocity $v$ .
+In operation, the dominant source of variability for the generated power is $v$. Being climate and weather-dependent, it is also the main reason for the intermittency and non-dispatchability of wind power (\cite{demeo2006natural}). This dependence motivates the usage by designers and generation operators of the so-called *wind-to-power curves* (or *power curves*), which are empirical relations that allow one to determine the generated power $P$ by knowing the wind velocity $v$.
 
-As design, planning, operation, maintenance, and trading of wind power are subject to such high variabilities, forecasting wind power generation (WPG) provides value for the different players in the electricity grid, illustrated in \ref{fig-electricity-grid-players}.  Table \ref{table-forecasting-reqs} summarizes how various system operation aspects can profit from forecasts at different time scales. Power generation from single turbines can also be aggregated at different levels. 
+As design, planning, operation, maintenance, and trading of wind power are subject to such high variabilities, forecasting wind power generation (WPG) provides value for the different players in the electricity grid, illustrated in \ref{fig-electricity-grid-players}.  Table \ref{table-forecasting-reqs} gives several examples on how various system operation aspects can profit from forecasts at different time scales. 
 
-- energy balance: preventing supply shortages and changes in frequency.
+In a liberalized electricity market, multiple entities are involved in supplying energy to final consumers, as \ref{fig-electricity-grid-players} illustrates. In EU, these parties are electricity generators, transmission system operators (TSO), distribution system operator (DSO), electricity supplier and regulator (\cite{erbach2016market}). TSOs are responsible for long-distance transport of energy and for balancing supply and demand in timeframes under quarter-hour. Imbalances of this nature imply in deviations from the nominal frequency and eventually in shortages. DSOs are responsible for delivering electricity to consumers. Electricity suppliers buy energy from generator parties and resell it to consumers.
 
-Market operators, for example, profit the most from regional aggregations, since for energy trading, this resolution is sufficiently high, with higher resolutions across the same space scales of interests often too costly (\cite{jung2014forecasting}). In particular for countries such as Germany, where continental and national renewables-promoting public funding initiatives such as the *Energiewende* resulted in high penetration of wind power in the grid, being able to accurately forecast wind power generation has a tangible impact both environmentally and economically.
+![image-20200617060458953](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200617060458953.png)
+
+Fig. ???. The different stages of electricity supply and the responsible parties in a liberalized market. 
+
+Power generation from single turbines can also be aggregated at different levels. Market operators, for example, profit the most from regional aggregations, since for energy trading, this resolution is sufficiently high, with higher resolutions across the same space scales of interests often too costly (\cite{jung2014forecasting}). 
+
+In particular for countries such as Germany, where continental and national renewables-promoting public funding initiatives such as the *Energiewende* resulted in high penetration of wind power in the grid, being able to accurately forecast wind power generation has a tangible impact both environmentally and economically.
 
 | Very short <br />($\sim secs\ - 0.5h $) | short <br />($0.5h - 72h$) | medium<br />($72h\ – 1\ week $)               | long<br />($1\ week\  – 1\ year $) |
 | --------------------------------------- | -------------------------- | --------------------------------------------- | ---------------------------------- |
@@ -266,9 +264,9 @@ For some forecasting problems such as the weather-conditioned wind power generat
 
 ![image-20200616234156789](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200616234156789.png)
 
-Fig ???. The DCRNN architecture.
+Fig ???. The DCRNN architecture (adapted from \cite{li2018dcrnn}).
 
-**ST-GCN**. A spatial-temporal graph is generated by stacking graph frames from all timesteps, each frame representing the graph state at a specific time. The spatial-temporal graph is partitioned and to each of its nodes is assigned a weight vector.   Finally, a graph convolution is performed on the weighted spatial-temporal graph.
+**ST-GCN**. A spatial-temporal graph is generated by stacking graph frames from all timesteps, each frame representing the graph state at a specific time (\ref{fig-stgcn}). The spatial-temporal graph is partitioned and to each of its nodes is assigned a weight vector.   Finally, a graph convolution is performed on the weighted spatial-temporal graph.
 
 ![image-20200616235706340](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200616235706340.png)
 
