@@ -54,100 +54,21 @@ The main requirement for a forecasting model concerns the accuracy of its foreca
 
 ### 2.3.1 Model Evaluation
 
--  training dataset $\{y_1,…,y_T\}$ and a test dataset $\{y_{T+1}, y_{T+2},…\}$.
+For assessing the performance of a model $f$, the time indexes $t$ for evaluating the forecast errors $e_{t}$, given a forecasting model $f$ and a set of available historical observations $\boldsymbol{y} _{1:T} = \{y_1,…,y_T\}$. In a naive approach, one could use all available data for both model inference and evaluation. This would, however, result in a highly biased estimate of the model generalization performance. Less biased estimations could be attained instead by partitioning the available dataset into a *training dataset*, exclusive for model inference, and a *test dataset*, used for model evaluation (\ref{training-test-split}). Once an estimate for the model performance is attained, a separate model inference using both partitions can be carried out, so that the epistemic part of the generalization error, resulting from limited data in model inference, is kept at a minimum. 
 
-- Accuracy criteria, known as *metrics*
+![training-test-split](https://otexts.com/fpp2/fpp_files/figure-html/traintest-1.png)
 
-- Models that approximate $f$ are assessed in terms of how accurate they are  iterms of their forecasts accuracy, the forecasts for a point in the future $\hat{y}_t$ 
-- Estimate its generalization error via test set
+Furthermore, it is necessary that this partitioning results in two sets of successive observations, in order to preserve the *Markovian dependence* underlying the sequential observations. Even under this constraint, however, the choice on what point to split the data is still arbitrary, implying that assessing model performance on a single arbitrary choice would result in a biased estimate. To minimize this bias, the model performance can be assessed for several different splitting points. The partial results are then aggregated, typically by averaging, into an overall result of model performance. This procedure is known as *out-of-sample cross-validation*.
+
+As the forecast error generally increases for longer forecasting horizons, the out-of-sample estimate might overestimate the generalization error, especially if only one-step forecasts are of interest. For overcoming this, only the  first point in the test data is used in evaluating the error. This approach is known as *expanding window cross-validation*,  and is illustrated in \ref{growing-window-cv}.
+
+![out-of-sample-cv](https://otexts.com/fpp2/fpp_files/figure-html/cv1-1.png)
+
+Fig ???. The growing window cross-validation scheme (adapted from \cite{krispin2019handson}). 
 
 ### 2.3.2 Accuracy Metrics
 
-### 2.3.3 Forecasting Approaches
-
-getting better results – general approach: minimizing residuals, by  using a partition of the available historical data for updating (iteratively or not) the model parameters configuration towards one that either (a) maximizes the likelihood of this configuration or (b) minimizes a loss function. The likelihood is defined as the relative number of ways that a configuration of model parameters can produce the provided data (\cite{mcelreath2020rethinking}). In contrast, loss functions quantify the deviation between predicted and ground truth values. The Mean Squared Error (MSE, \ref{eq-mse}) is a typical choice for a loss function for continuous-type responses, as it accounts for both bias and variance errors, besides exhibiting smoothness amenable to convex optimization (\cite{goodfellow2016deep}).
-$$
-MSE = \frac{1}{N}\sum_{t=1}^N e^2_t
-$$
-The ultimate aim of the optimization process underlying the model inference is to maximize model generalization performance, i.e., to minimize its generalization error. Aiming at an unbiased estimation of this error, one often dedicates exclusive partitions of the available data for (a) model inference and for (b) assessing the generalization error. The partition (a) is often referred as the *training set*; the partition (b), as the *test set* (\cite{hyndman2018principles}, \ref{fig-training-test-split}). 
-
-\ref{methods-overview} gives an overviased on available measurements . ew of the methods reviewed in this work. We start by presenting simple forecasting methods[¹], which are often used as baselines for other methods (\cite{hyndman2018principles}.
-
-[^1]: Analogous to Murphy in \cite{murphy2012probabilistic}, we draw distinctions between the concepts of method, model, and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e., inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference). We denote by a model any unique configuration of parameters in a space defined by a method. Equivalently, a model represents a response surface (deterministic model) or the distribution of the response conditional on its inputs (probabilistic model).
-
-**![methods-overview](/home/jonasmmiguel/Desktop/methods-overview.png)**Fig. ???. Forecasting methods presented in this work. Most of these methods only model dependencies of temporal nature and are presented in this section. Exception are DCRNN, ST-GCN, and Graph WaveNet (ML-based), presented in section \ref{spatio-temporal-forecasting}. They explicitly approach a more general forecasting setting where capturing both temporal and spatial dependencies is a central concern.   
-
-#### 2.3.3.1 Baseline Approaches
-
-**Naïve method**. Forecast for any point assumes a constant value: the value from the last observation (\ref{eq-naive}). As the naïve forecast is the optimal prediction for a random walk process, it is also known as the *random walk* method.
-$$
-\hat{y}_{T+h|T} = y_T
-$$
-**Seasonal Naïve method**. Time series are modeled as harmonic with period $k$ observations (i.e., perfectly seasonal with seasonal period $k$), and for a given point  in future, suggest the corresponding last observed value from the last season (\ref{eq-snaive}). For example, all monthly forecasts for any future June assume the value from the last observed June value. 
-$$
-\hat{y}_{T+h|T} = y_{T+h-k}
-$$
-**Drift method**. The forecast for any point assumes a constant value rate of change, with values themselves starting from the latest observed value. 
-$$
-\hat{y}_{T+h|T} = y_{T} + h\left(\frac{y_T-y_1}{T-1} \right)
-$$
-
-**Historical Average (HA) method. ** The forecast for any point assumes a constant value: the average of the historical data (\ref{eq-naive}).
-$$
-\hat{y}_{T+h|T} = \frac{1}{T}\sum_{t=1}^Ty_t
-$$
-
-#### 2.3.3.2 Statistical Approaches
-
-#### 2.3.3.3 Machine Learning Approaches
-
-
-
-
-
-desired properties of residuals
-
-- uncorrelated, as any correlation in residuals indicate there is information left in them which could be used to improve the forecasts. 
-- zero mean 
-
-- 
-  
-  ![training-test-split](https://otexts.com/fpp2/fpp_files/figure-html/traintest-1.png)
-  
-  Fig ???. Splitting the available data into training and test sets (adapted from \cite{krispin2019handson}). 
-
-  
-
-  For a forecasting horizon of interest, A single training/test split allows estimating a single value for the generalization error for a predefined forecasting horizon. Estimating the generalization error on a single test data has the drawback
-
-- Quantifying generalization error via performance metrics
-
-- As models have parameters, so do methods have their own, often referred to as *hyperparameters*. They may control the space of model parameters configurations, the model inference process or eventually the loss function (\cite{hutter2019automated}). Hyperparameters may have a major influence on model performance. When besides the model parameters themselves, we also search for the parameters from its parent method, yet another partition becomes necessary in order to attain a minimally unbiased estimate of the resulting generalization errors. When working with three partitions, one for model inference, another for assessing its generalization error given a hyperparameters configuration and another one for assessing it across different hyperparameters configurations, authors often refer to them as training, validation and test set, respectively.
-
-- 
-
-### 2.3.1 Model Evaluation / Evaluating Models Performance
-
-> Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
-
-- 
-
-Time Series Cross-Validation
-
-![img](https://otexts.com/fpp2/fpp_files/figure-html/cv1-1.png)
-
-- expanding window (figure)
-- out-of-sample cross-validation
-
-#### Metrics
-
-A central requirement for forecasting models is accuracy. It is usual to quantify it in terms of accuracy metrics, which characterize the distribution of *forecast errors* (\cite{hyndman2018principles}). A forecast error expresses by how much a forecast  $\hat{y}_{T+h|T}$ for a point in the test set deviates from its corresponding observed value $y_{T+h}$. It could be expressed as
-$$
-e_{T+h} = y_{T+h} - \hat{y}_{T+h|T},
-$$
-for a training dataset $\{y_1,…,y_T\}$ and a test dataset $\{y_{T+1}, y_{T+2},…\}$.
-
-Many different metrics exist, each one conveying one aspect of the error distribution. Some of the most usual definitions  are presented from \ref{eq-rmse} to \{eq-} (see e.g., \cite{wu2019graphwavenet}, \cite{liu2019st-mgcn},  \cite{hyndman2006metrics}). In particular, $MASE$ and $MdRAE$ use as denominator the forecast errors of the naïve model, which takes the last known value to forecast the next point. The naïve model can be shown to be optimal for a random walk process (\cite{hyndman2006metrics}).
+Many different metrics exist, each one summarizing the error distribution in a different way. Some of the most usual definitions  are presented from \ref{eq-rmse} to \{eq-} (see e.g., \cite{wu2019graphwavenet}, \cite{liu2019st-mgcn},  \cite{hyndman2006metrics}). In particular, $MASE$ and $MdRAE$ use as denominator the forecast errors of the naïve model, which takes the last known value to forecast the next point. The naïve model can be shown to be optimal for a random walk process (\cite{hyndman2006metrics}).
 $$
 RMSE = \sqrt{\mathbb{E}(e_t^2)} = \sqrt{\frac{1}{N}\sum_{t=1}^N e^2_t}
 $$
@@ -200,6 +121,65 @@ On the one hand, single metrics concisely convey information about the error dis
 Metrics differ in interpretability, scale invariance, sensitivity to outliers, symmetric penalization of negative and positive errors, and behavior predictability as $y_t \rightarrow 0$ (\cite{hyndman2006metrics}). Therefore, it is important that the choice on the metrics set is coherent with the application requirements \cite{armstrong2002principles}. For example, while failing to forecast single sudden peaks in local wind speed (wind gusts) might not be important in wind farm planning, it might be a primary requirement for wind turbine operation. \ref{table-sensitivities} summarizes sensitivities.
 
 Although often the most important one, accuracy is often just one of many requirements in a forecasting model development. In \cite{armstrong2002principles}, Armstrong reports that value inference time, cost savings resulting from improved decisions, interpretability, usability, ease of implementation, and development costs (human and computational resources) tend to be of comparable importance to researchers, practitioners, and decision-makers.
+
+### 2.3.3 Forecasting Approaches
+
+getting better results – general approach: minimizing residuals, by  using a partition of the available historical data for updating (iteratively or not) the model parameters configuration towards one that either (a) maximizes the likelihood of this configuration or (b) minimizes a loss function. The likelihood is defined as the relative number of ways that a configuration of model parameters can produce the provided data (\cite{mcelreath2020rethinking}). In contrast, loss functions quantify the deviation between predicted and ground truth values. The Mean Squared Error (MSE, \ref{eq-mse}) is a typical choice for a loss function for continuous-type responses, as it accounts for both bias and variance errors, besides exhibiting smoothness amenable to convex optimization (\cite{goodfellow2016deep}).
+$$
+MSE = \frac{1}{N}\sum_{t=1}^N e^2_t
+$$
+ew of the methods reviewed in this work. We start by presenting simple forecasting methods[¹], which are often used as baselines for other methods (\cite{hyndman2018principles}.
+
+[^1]: Analogous to Murphy in \cite{murphy2012probabilistic}, we draw distinctions between the concepts of method, model, and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e., inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference). We denote by a model any unique configuration of parameters in a space defined by a method. Equivalently, a model represents a response surface (deterministic model) or the distribution of the response conditional on its inputs (probabilistic model).
+
+**![methods-overview](/home/jonasmmiguel/Desktop/methods-overview.png)**Fig. ???. Forecasting methods presented in this work. Most of these methods only model dependencies of temporal nature and are presented in this section. Exception are DCRNN, ST-GCN, and Graph WaveNet (ML-based), presented in section \ref{spatio-temporal-forecasting}. They explicitly approach a more general forecasting setting where capturing both temporal and spatial dependencies is a central concern.   
+
+#### 2.3.3.1 Baseline Approaches
+
+**Naïve method**. Forecast for any point assumes a constant value: the value from the last observation (\ref{eq-naive}). As the naïve forecast is the optimal prediction for a random walk process, it is also known as the *random walk* method.
+$$
+\hat{y}_{T+h|T} = y_T
+$$
+**Seasonal Naïve method**. Time series are modeled as harmonic with period $k$ observations (i.e., perfectly seasonal with seasonal period $k$), and for a given point  in future, suggest the corresponding last observed value from the last season (\ref{eq-snaive}). For example, all monthly forecasts for any future June assume the value from the last observed June value. 
+$$
+\hat{y}_{T+h|T} = y_{T+h-k}
+$$
+**Drift method**. The forecast for any point assumes a constant value rate of change, with values themselves starting from the latest observed value. 
+$$
+\hat{y}_{T+h|T} = y_{T} + h\left(\frac{y_T-y_1}{T-1} \right)
+$$
+
+**Historical Average (HA) method. ** The forecast for any point assumes a constant value: the average of the historical data (\ref{eq-naive}).
+$$
+\hat{y}_{T+h|T} = \frac{1}{T}\sum_{t=1}^Ty_t
+$$
+
+#### 2.3.3.2 Statistical Approaches
+
+#### 2.3.3.3 Machine Learning Approaches
+
+
+
+
+
+desired properties of residuals
+
+- uncorrelated, as any correlation in residuals indicate there is information left in them which could be used to improve the forecasts. 
+- zero mean 
+
+- 
+  
+  
+  
+  
+
+  For a forecasting horizon of interest, A single training/test split allows estimating a single value for the generalization error for a predefined forecasting horizon. Estimating the generalization error on a single test data has the drawback
+
+- Quantifying generalization error via performance metrics
+
+- As models have parameters, so do methods have their own, often referred to as *hyperparameters*. They may control the space of model parameters configurations, the model inference process or eventually the loss function (\cite{hutter2019automated}). Hyperparameters may have a major influence on model performance. When besides the model parameters themselves, we also search for the parameters from its parent method, yet another partition becomes necessary in order to attain a minimally unbiased estimate of the resulting generalization errors. When working with three partitions, one for model inference, another for assessing its generalization error given a hyperparameters configuration and another one for assessing it across different hyperparameters configurations, authors often refer to them as training, validation and test set, respectively.
+
+- 
 
 ### 2.2.3 Non-Trivial Forecasting Methods
 
