@@ -1,3 +1,5 @@
+# 2. Background
+
 ## 2.1. Liberalized Electricity Markets
 
 In a liberalized electricity market, multiple entities are involved in supplying energy to final consumers, as \ref{fig-electricity-grid-players} illustrates. In the EU, these parties are electricity generators, transmission system operators (TSO), distribution system operator (DSO), electricity supplier, and regulator (\cite{erbach2016market}). TSOs are responsible for long-distance transport of energy and for balancing supply and demand in timeframes under quarter-hour. Imbalances of this nature cause deviations from the nominal frequency and shortages in more severe cases. DSOs are responsible for delivering electricity to consumers. Electricity suppliers buy energy from generator parties and resell it to consumers.
@@ -124,11 +126,13 @@ Although often the most important one, accuracy is often just one of many requir
 
 ### 2.3.3 Forecasting Approaches
 
-getting better results – general approach: minimizing residuals, by  using a partition of the available historical data for updating (iteratively or not) the model parameters configuration towards one that either (a) maximizes the likelihood of this configuration or (b) minimizes a loss function. The likelihood is defined as the relative number of ways that a configuration of model parameters can produce the provided data (\cite{mcelreath2020rethinking}). In contrast, loss functions quantify the deviation between predicted and ground truth values. The Mean Squared Error (MSE, \ref{eq-mse}) is a typical choice for a loss function for continuous-type responses, as it accounts for both bias and variance errors, besides exhibiting smoothness amenable to convex optimization (\cite{goodfellow2016deep}).
+In general, forecasting approaches, statistical or machine learning-based, attain models by minimizing the forecast errors on the training set. This optimization process, often iterative, uses an optimization algorithm to update the model parameters configuration towards one that either (a) maximizes their likelihood or  (b) minimizes a loss function on the training set. 
+
+The likelihood is, in essence, the relative number of ways that a configuration of model parameters can produce the provided data (\cite{mcelreath2020rethinking}). In contrast, loss functions summarize the distribution of forecast errors, much like accuracy metrics. Loss functions are subject to an additional requirement, however, which is their suitability  as objective function in the convex optimization underlying most of model inferencing schemes. Therefore, although it is important that the objective function guiding the model inference is coherent with the metrics used for evaluating the models, they do not have to coincide. The Mean Squared Error (MSE, \ref{eq-mse}) is a typical choice for a loss function for continuous-type responses, as it accounts for both bias and variance errors, besides exhibiting smoothness amenable to convex optimization (\cite{goodfellow2016deep}). 
 $$
 MSE = \frac{1}{N}\sum_{t=1}^N e^2_t
 $$
-ew of the methods reviewed in this work. We start by presenting simple forecasting methods[¹], which are often used as baselines for other methods (\cite{hyndman2018principles}.
+\ref{methods-overview} provides an overview of the approaches reviewed in this work. We start by presenting simple forecasting approaches[¹], which are often used as baselines for other approaches (\cite{hyndman2018principles}. 
 
 [^1]: Analogous to Murphy in \cite{murphy2012probabilistic}, we draw distinctions between the concepts of method, model, and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e., inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference). We denote by a model any unique configuration of parameters in a space defined by a method. Equivalently, a model represents a response surface (deterministic model) or the distribution of the response conditional on its inputs (probabilistic model).
 
@@ -155,35 +159,6 @@ $$
 $$
 
 #### 2.3.3.2 Statistical Approaches
-
-#### 2.3.3.3 Machine Learning Approaches
-
-
-
-
-
-desired properties of residuals
-
-- uncorrelated, as any correlation in residuals indicate there is information left in them which could be used to improve the forecasts. 
-- zero mean 
-
-- 
-  
-  
-  
-  
-
-  For a forecasting horizon of interest, A single training/test split allows estimating a single value for the generalization error for a predefined forecasting horizon. Estimating the generalization error on a single test data has the drawback
-
-- Quantifying generalization error via performance metrics
-
-- As models have parameters, so do methods have their own, often referred to as *hyperparameters*. They may control the space of model parameters configurations, the model inference process or eventually the loss function (\cite{hutter2019automated}). Hyperparameters may have a major influence on model performance. When besides the model parameters themselves, we also search for the parameters from its parent method, yet another partition becomes necessary in order to attain a minimally unbiased estimate of the resulting generalization errors. When working with three partitions, one for model inference, another for assessing its generalization error given a hyperparameters configuration and another one for assessing it across different hyperparameters configurations, authors often refer to them as training, validation and test set, respectively.
-
-- 
-
-### 2.2.3 Non-Trivial Forecasting Methods
-
-\ref{fig-methods-overview}
 
 Statistical forecasting approaches are characterized by the modeling of the time series as a realization of a stationary stochastic process (\cite{brockwell2009}, \cite{bontenpi2013strategies}). The two most widely used families of statistical methods are the Exponential Smoothing (ES) family and the ARIMA family (\cite{hyndman2018principles}). 
 
@@ -228,6 +203,9 @@ $$
 $$
 \hat{y}'_t = c + \varepsilon_t + \phi_1 y'_{t-1} + ... + \phi_p y'_{t-p} + \cdots + \theta_1 \varepsilon_{t-1} + ... + \theta_q \varepsilon_{t-q}
 $$
+
+#### 2.3.3.3 Machine Learning Approaches
+
 Approaches solely based on Machine Learning struggled until recently to consistently outperform statistical time series forecasting approaches (\cite{makridakis2018waysforward}).  Despite relying on biased evidence (e.g., models were evaluated across all time series without any sound choice nor search for hyperparameters), Makridakis claimed in \cite{makridakis2019ml} that "hybrid approaches and combinations of methods are the way forward for improving the forecasting accuracy and making forecasting more valuable." Oreshkin et al. challenged in \cite{bengio2020nbeats} this conclusion, introducing N-BEATS, a pure deep learning method that was shown to outperform statistical and hybrid methods, while also ensuring interpretability of intermediate outputs. 
 
 Below we present selected deep learning methods helpful for understanding current state-of-the-art approaches for both wind power generation-specific applications and in general univariate time series forecasting applications. 
@@ -250,6 +228,8 @@ Fig ???. Basic LSTM architecture in its unfolded representation (adapted from \c
 
 Fig ???. NBEATS architecture.
 
+#### 2.3.3.4 Hybrid Approaches
+
 Hybrid methods combine machine learning and statistical approaches by using the outputs from statistical engines as features \cite{bengio2020nbeats}. Below we present ES-RNN, a hybrid method winner of the 2017 M4 forecasting competition.
 
 **ES-RNN.** It uses Holt-Winters' ES method as statistical engine for capturing the seasonal and level components from the time series into features, which are then used by an LSTM model to exploit non-linear dependencies.
@@ -260,6 +240,14 @@ where \ \ \ell_t &= \alpha \frac{y_t}{s_{t-m}} + (1-\alpha)\ell_{t-1}   &(level)
 s_t &= \gamma y_t/\ell_{t} + (1-\gamma)s_{t-m} \ \ \ &(seasonal)
 \end{aligned}
 $$
+
+## 
+
+
+
+### 2.3.4. Model Selection
+
+As models have parameters, so do methods have their own, often referred to as *hyperparameters*. They may control the space of model parameters configurations, the model inference process or eventually the loss function (\cite{hutter2019automated}). Hyperparameters may have a major influence on the performance of resulting models. Accounting for this effect requires yet another partition in order to attain a minimally unbiased estimate of the resulting generalization error. When working with three partitions, one for model inference, another for assessing its generalization error given a hyperparameters configuration and another one for assessing it across different hyperparameters configurations, authors often refer to them as training, validation and test set, respectively.
 
 ## 2.4 Spatio-Temporal Forecasting
 
