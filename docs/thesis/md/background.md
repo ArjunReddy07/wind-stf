@@ -46,24 +46,39 @@ Usual approaches to forecasting wind power generation are physical, statistical,
 
 In \cite{brockwell2016intro}, Brockwell & Davis define time series as "a set of observations $y_t$, each one being recorded at a specific time $t$." When observations are recorded at discrete times, they are called a discrete-time time series, on which we focus this work. 
 
-An important task in time series analysis is time series forecasting: "prediction of data at future times using observations collected in the past" \cite{hyndman2018principles}. Time series forecasting permeates most aspects of modern business, such as business planning from production to distribution,  finance and marketing, inventory control, and customer management (\cite{oreshkin2020nbeats}). In some business use cases, a single point in forecasting accuracy may represent millions of dollars (\cite{kahn2003apudOreshkin}, \cite{jain2017apudOreshkin}).  
+An important task in time series analysis is time series forecasting, which concerns "the prediction of data at future times using observations collected in the past" \cite{hyndman2018principles}. Time series forecasting permeates most aspects of modern business, such as business planning from production to distribution,  finance and marketing, inventory control, and customer management (\cite{oreshkin2020nbeats}). In some business use cases, a single point in forecasting accuracy may represent millions of dollars (\cite{kahn2003apudOreshkin}, \cite{jain2017apudOreshkin}).  
 
-Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling, and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g., hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish statistical from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step-ahead point forecasts. 
+Time series forecasting tasks can be categorized in terms of (a) inputs, (b) modeling, and (c) outputs. In terms of inputs, one can use exogenous features or not, one or more input time series (univariate *versus* multivariate). In terms of modeling, one must define a resolution (e.g., hourly, weekly), can aggregate data in different levels (hierarchical *versus* non-hierarchical), and can use different schemes for generating models (we distinguish statistical from machine learning-based). Finally, regarding outputs, a forecasting task might involve making predictions in terms of single values or whole distributions (deterministic *versus* probabilistic), point-predictions or prediction intervals, predict values for either a single point or for multiple points in future time (one-step-ahead *versus* multi-step-ahead). In this work, we focus on deterministic, one-step ahead point forecasting, where one is interested in obtaining a function $f: \mathbb{R}^T \rightarrow \mathbb{R}$ (a *forecasting model*) that maps historical observations  $\boldsymbol{y} _{1:T} = \{y_1,…,y_T\}$ of a variable $y_t$ to its value in a future time step $T+h$, for a forecasting horizon of interest $h$. 
 
-In *univariate forecasting*, one aims to predict the value of a variable $y_{T+1}$ based on measurements $\boldsymbol{y} _{1:T} = \{y_1,…,y_T\}$. We denote by $\hat{y}_{T+1}$ the forecast value. More generally, one might be interested in forecasting for the  $h$ time period ahead. For a given task, $h$ is often referred to as the *forecast horizon*. In contrast to the univariate setting, *multivariate forecasting* models rely on historical observations not from a single but from several input variables, which can be expressed by a sequence of input vectors $\boldsymbol{X}_{1:T} = \{\boldsymbol{X}_1, ..., \boldsymbol{X}_T\}$. 
+The main requirement for a forecasting model concerns the accuracy of its forecasts $\hat{y}_{t|T}$. This accuracy is quantified by a *metric*, which summarizes the distribution of the forecast error $e_{t} = y_{t} - \hat{y}_{t|T}$ over the different evaluation timesteps $t$. In the following subsections, we introduce some typical options for (a) schemes for defining the evaluation timesteps $t$ (\ref{model evaluation}), (b) accuracy metrics (\ref{model-evaluation}), as well as (c) approaches for generating  forecasting models (\ref{baseline-methods}, \ref{statistical-methods}, \ref{ml-methods}).
 
-### 2.2.1 Forecasting Methods
+### 2.3.1 Model Evaluation
 
-Analogous to Murphy in \cite{murphy2012probabilistic}, we distinguish the concepts of method, model, and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e., inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference). We denote by a model any unique configuration of parameters in a space defined by a method. Equivalently, a model represents a response surface (deterministic model) or the distribution of the response conditional on its inputs (probabilistic model).
+-  training dataset $\{y_1,…,y_T\}$ and a test dataset $\{y_{T+1}, y_{T+2},…\}$.
 
-\ref{methods-overview} gives an overview of the methods reviewed in this work. We start by presenting simple forecasting methods, which are often used as baselines for other methods (\cite{hyndman2018principles}).
+- Accuracy criteria, known as *metrics*
+
+- Models that approximate $f$ are assessed in terms of how accurate they are  iterms of their forecasts accuracy, the forecasts for a point in the future $\hat{y}_t$ 
+- Estimate its generalization error via test set
+
+### 2.3.2 Accuracy Metrics
+
+### 2.3.3 Forecasting Approaches
+
+getting better results – general approach: minimizing residuals, by  using a partition of the available historical data for updating (iteratively or not) the model parameters configuration towards one that either (a) maximizes the likelihood of this configuration or (b) minimizes a loss function. The likelihood is defined as the relative number of ways that a configuration of model parameters can produce the provided data (\cite{mcelreath2020rethinking}). In contrast, loss functions quantify the deviation between predicted and ground truth values. The Mean Squared Error (MSE, \ref{eq-mse}) is a typical choice for a loss function for continuous-type responses, as it accounts for both bias and variance errors, besides exhibiting smoothness amenable to convex optimization (\cite{goodfellow2016deep}).
+$$
+MSE = \frac{1}{N}\sum_{t=1}^N e^2_t
+$$
+The ultimate aim of the optimization process underlying the model inference is to maximize model generalization performance, i.e., to minimize its generalization error. Aiming at an unbiased estimation of this error, one often dedicates exclusive partitions of the available data for (a) model inference and for (b) assessing the generalization error. The partition (a) is often referred as the *training set*; the partition (b), as the *test set* (\cite{hyndman2018principles}, \ref{fig-training-test-split}). 
+
+\ref{methods-overview} gives an overviased on available measurements . ew of the methods reviewed in this work. We start by presenting simple forecasting methods[¹], which are often used as baselines for other methods (\cite{hyndman2018principles}.
+
+[^1]: Analogous to Murphy in \cite{murphy2012probabilistic}, we draw distinctions between the concepts of method, model, and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e., inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference). We denote by a model any unique configuration of parameters in a space defined by a method. Equivalently, a model represents a response surface (deterministic model) or the distribution of the response conditional on its inputs (probabilistic model).
 
 **![methods-overview](/home/jonasmmiguel/Desktop/methods-overview.png)**Fig. ???. Forecasting methods presented in this work. Most of these methods only model dependencies of temporal nature and are presented in this section. Exception are DCRNN, ST-GCN, and Graph WaveNet (ML-based), presented in section \ref{spatio-temporal-forecasting}. They explicitly approach a more general forecasting setting where capturing both temporal and spatial dependencies is a central concern.   
 
-**Historical Average (HA) method. ** Forecast for any point assumes a constant value: the average of the historical data (\ref{eq-naive}).
-$$
-\hat{y}_{T+h|T} = \frac{1}{T}\sum_{t=1}^Ty_t
-$$
+#### 2.3.3.1 Baseline Approaches
+
 **Naïve method**. Forecast for any point assumes a constant value: the value from the last observation (\ref{eq-naive}). As the naïve forecast is the optimal prediction for a random walk process, it is also known as the *random walk* method.
 $$
 \hat{y}_{T+h|T} = y_T
@@ -72,25 +87,33 @@ $$
 $$
 \hat{y}_{T+h|T} = y_{T+h-k}
 $$
-**Drift method**. Forecast for any point assumes a constant value rate of change, with values themselves starting from the latest observed value. 
+**Drift method**. The forecast for any point assumes a constant value rate of change, with values themselves starting from the latest observed value. 
 $$
 \hat{y}_{T+h|T} = y_{T} + h\left(\frac{y_T-y_1}{T-1} \right)
 $$
 
-- desired properties of residuals
-  - uncorrelated, as any correlation in residuals indicate there is information left in them which could be used to improve the forecasts. 
-  - zero mean 
+**Historical Average (HA) method. ** The forecast for any point assumes a constant value: the average of the historical data (\ref{eq-naive}).
+$$
+\hat{y}_{T+h|T} = \frac{1}{T}\sum_{t=1}^Ty_t
+$$
 
-- getting better results – general approach: minimizing residuals, by  using a partition of the available historical data for updating (iteratively or not) the model parameters configuration towards one that either (a) maximizes the likelihood of this configuration or (b) minimizes a loss function. The likelihood is defined as the relative number of ways that a configuration of model parameters can produce the provided data (\cite{mcelreath2020rethinking}). In contrast, loss functions quantify the deviation between predicted and ground truth values. The Mean Squared Error (MSE, \ref{eq-mse}) is a typical choice for a loss function for continuous-type responses, as it accounts for both bias and variance errors, besides exhibiting smoothness amenable to convex optimization (\cite{goodfellow2016deep}).
-  $$
-  MSE = \frac{1}{N}\sum_{t=1}^N e^2_t
-  $$
-  The ultimate aim of the optimization process underlying the model inference is to maximize model generalization performance, i.e., to minimize its generalization error. Aiming at an unbiased estimation of this error, one often dedicates exclusive partitions of the available data for (a) model inference and for (b) assessing the generalization error. The partition (a) is often referred as the *training set*; the partition (b), as the *test set* (\cite{hyndman2018principles}, \ref{fig-training-test-split}). 
+#### 2.3.3.2 Statistical Approaches
 
+#### 2.3.3.3 Machine Learning Approaches
+
+
+
+
+
+desired properties of residuals
+
+- uncorrelated, as any correlation in residuals indicate there is information left in them which could be used to improve the forecasts. 
+- zero mean 
+
+- 
   
-
   ![training-test-split](https://otexts.com/fpp2/fpp_files/figure-html/traintest-1.png)
-
+  
   Fig ???. Splitting the available data into training and test sets (adapted from \cite{krispin2019handson}). 
 
   
@@ -101,7 +124,9 @@ $$
 
 - As models have parameters, so do methods have their own, often referred to as *hyperparameters*. They may control the space of model parameters configurations, the model inference process or eventually the loss function (\cite{hutter2019automated}). Hyperparameters may have a major influence on model performance. When besides the model parameters themselves, we also search for the parameters from its parent method, yet another partition becomes necessary in order to attain a minimally unbiased estimate of the resulting generalization errors. When working with three partitions, one for model inference, another for assessing its generalization error given a hyperparameters configuration and another one for assessing it across different hyperparameters configurations, authors often refer to them as training, validation and test set, respectively.
 
-### 2.2.2 Model Evaluation / Evaluating Models Performance
+- 
+
+### 2.3.1 Model Evaluation / Evaluating Models Performance
 
 > Hyndman, R.J., & Athanasopoulos, G. (2018) *Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on 14 Jun 2020.)
 
@@ -258,11 +283,11 @@ $$
 
 ## 2.4 Spatio-Temporal Forecasting
 
-In a univariate, deterministic, one-step ahead, point-forecast time series forecasting problem, one is interested in obtaining a function $f: \mathbb{R}^T \rightarrow \mathbb{R}$ that maps historical observations of a variable $y_t$ to its value in the next timestep. In the spatio-temporal (ST) version of this problem, one aims to attain a function $f: \mathbb{R}^{|V|\times T} \rightarrow \mathbb{R}^{|V|}$ that maps historical observations of a quantity across different regions $v\in V$, $\boldsymbol{y}_t = [y_{1,t}\  \  y_{2,t}\ \ \cdots \ \ y_{|V|,t}]^\top$ ,  to its value $\boldsymbol{y}_{t+1}$ in the next timestep  (\ref{eq-spatio-temporal-forecasting}). 
+In the spatio-temporal (ST) version of this problem, one aims to attain a function $f: \mathbb{R}^{|V|\times T} \rightarrow \mathbb{R}^{|V|}$ that maps historical observations of a quantity across different regions $v\in V$, $\boldsymbol{y}_t = [y_{1,t}\  \  y_{2,t}\ \ \cdots \ \ y_{|V|,t}]^\top$ ,  to its value $\boldsymbol{y}_{t+1}$ in the next timestep  (\ref{eq-spatio-temporal-forecasting}). 
 $$
 [\boldsymbol{y}_{t-T+1}, \  \cdots\ , \boldsymbol{y}_{t}] \xrightarrow{f(\cdot)} \boldsymbol{y}_{t+1}
 $$
-For some forecasting problems such as for the weather-conditioned wind power generation, the spatial dependency might play an important along with the temporal dependencies themselves (\cite{engeland2017variability}). In this work, we consider three different approaches to the ST forecasting problem. In a naïve approach, time series for different locations are modeled independently, thus neglecting spatial dependencies. In a second approach, the time series are modeled jointly via multivariate forecasting methods. Finally, we consider the explicit modeling of both spatial and temporal dependencies via dynamic graphs. The latter approach is represented by the methods presented below.
+For some forecasting problems such as for the weather-conditioned wind power generation, the spatial dependency might play an important along with the temporal dependencies themselves (\cite{engeland2017variability}). In this work, we consider three different approaches to the ST forecasting problem. In a naïve approach, time series for different locations are modeled independently, thus neglecting spatial dependencies. In a second approach, the time series are modeled jointly via a multivariate forecasting approach, where for generating a single model one relies on historical observations not from a single but from several input variables, which can be expressed by a sequence of input vectors $\boldsymbol{X}_{1:T} = \{\boldsymbol{X}_1, ..., \boldsymbol{X}_T\}$.  Finally, we consider the explicit modeling of both spatial and temporal dependencies via dynamic graphs. The latter approach is represented by the methods presented below.
 
 **DCRNN (Diffusion Convolutional RNN).** RNN is leveraged by replacing the matrix multiplication by a diffusion convolution (\cite{liu2020intro}). Motivated by the traffic forecasting problem, where spatial dependencies are directional (non-Euclidean), Li et al. (\cite{li2018dcrnn}) recast the spatio-temporal evolution of a variable as a diffusion process on a directed graph, where every node corresponds to a sensor. Learning is performed via (1) diffusion convolution, further integrated with a (2) seq-to-seq learning framework, and a (3) scheduled sampling for modeling long-term dependencies (\ref{fig-dcrnn}). 
 
