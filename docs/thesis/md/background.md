@@ -227,28 +227,23 @@ Approaches solely based on Machine Learning struggled until recently to consiste
 
 Below we present selected deep learning methods helpful for understanding current state-of-the-art approaches for both wind power generation-specific applications and in general univariate time series forecasting applications. 
 
-**RNN (Recurrent Neural Network).** Uses the recurrent layer as building block (\ref{fig-rnn}), which is implemented over a sequence of steps. Successive hidden states between layers are related by the so-called *Markov dependence* (\cite{battaglia2020gnn}). This allows RNN to capture dependencies in sequential data. However, in its basic design, RNN is often unable to incorporate dependencies that span over more than a few timesteps, most importantly due to vanishing gradients. Every block concatenates the last hidden state with the current input, passing the result to an activation function. The result is carried forward as the updated hidden state. 
+**RNN (Recurrent Neural Network).** Use the recurrent layer as building block: a cell that updates its state according to (a) its previous state $h_{t-1}$ and (b) its current input $x_t$ (\ref{fig-rnn}). By performing this update at every timestep of a time series, this basic structure allows the RNN to express temporal dependencies in time series. An RNN can be built by serializing several of these self-looping cells between the input layer and the output layer for achieving higher-order mappings and thus capturing more complex temporal dependencies. The major limitation of RNN in its basic design (recurrent layer as in \ref{fig-rnn}) is its inability to capture dependencies that exist across longer periods than a few timesteps. It arises from a phenomenon called *vanishing gradients*: while inferring optimal parameters via gradient descent (learning phase), the gradients calculated via backpropagation through time become too small to guide the optimization.
 
 ![http://colah.github.io/posts/2015-08-Understanding-LSTMs/img/LSTM3-SimpleRNN.png](http://colah.github.io/posts/2015-08-Understanding-LSTMs/img/LSTM3-SimpleRNN.png)
 
-Fig ???. The basic RNN architecture in its unfolded representation. Arrows indicate transfers of input and hidden states (adapted from \cite{http://colah.github.io/posts/2015-08-Understanding-LSTMs/}).  
+Fig ???. The basic RNN architecture in its unfolded representation. Arrows indicate transfers of input and hidden states (adapted from \cite{http://colah.github.io/posts/2015-08-Understanding-LSTMs/}). Every block concatenates the last hidden state with the current input, passing the result to an activation function (tanh in this illustration). The result is carried forward as the updated hidden state. 
 
-**LSTM (Long-Short Term Memory).** A type of RNN, improves on its basic design  most importantly by the cell state transfer (superior horizontal line inside the repeating module in /ref{fig-lstm}), which allows information to persist across many transitions of cell states. Instead of a single layer, each cell presents four layers interacting in a way that defines how the old cell state and the new input state upstream are used to determine the new cell state. For instance, in the leftmost vertical channel, the forget gate (sigmoid layer in /ref{fig-lstm}) controls how much from the old cell state should be used to define the new cell state. The rightmost layer represents the output gate, which controls how much of the current cell state should be passed the current hidden state modifies the next updated state. 
+**LSTM (Long-Short Term Memory).** A type of RNN, it improves on its basic design most importantly by including an long memory state which is allowed to be transferred across several update steps with only minimal changes (superior horizontal line inside the repeating module in /ref{fig-lstm}). This allows information to persist across many cell updates, thus making it possible to capture long-term dependencies. The extent to which this long memory state is preserved is controlled by forget gate, illustrated in /ref{fig-lstm}) by the leftmost vertical path inside the cell. The other paths represent other gated state transfers, which determine how (a) the previous cell state, (b) the previous long memory state and (c) the current cell inputs are combined and passed to the next cell iteration and as input to deeper layers. 
 
 ![http://colah.github.io/posts/2015-08-Understanding-LSTMs/img/LSTM3-chain.png](http://colah.github.io/posts/2015-08-Understanding-LSTMs/img/LSTM3-chain.png)
 
-Fig ???. Basic LSTM architecture in its unfolded representation (adapted from \cite{http://colah.github.io/posts/2015-08-Understanding-LSTMs/}).
+Fig ???. Basic LSTM architecture in its unfolded representation (adapted from \cite{http://colah.github.io/posts/2015-08-Understanding-LSTMs/}). 
 
 **NBEATS.** Uses as building block (a) a multi-layer fully connected network with ReLU nonlinearities, which feed (b) basis layers that generate a backcast and a forecast output. Blocks are arranged into stacks, organized to form a model.  Models resulting from this architecture consistently outperformed state-of-the-art methods for univariate forecasting across different horizons and thousands of time series datasets of different nature, while using a single hyperparameter configuration (\cite{bengio2020nbeats}).  
 
 ![image-20200616201550854](/home/jonasmmiguel/.config/Typora/typora-user-images/image-20200616201550854.png)
 
 Fig ???. NBEATS architecture.
-
-- Historival Average
-- Naïve
-- Seasonal Naïve
-- Drift
 
 Hybrid methods combine machine learning and statistical approaches by using the outputs from statistical engines as features \cite{bengio2020nbeats}. Below we present ES-RNN, a hybrid method winner of the 2017 M4 forecasting competition.
 
