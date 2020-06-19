@@ -56,7 +56,7 @@ The main requirement for a forecasting model concerns the accuracy of its foreca
 
 ### 2.3.1 Model Evaluation
 
-For assessing the performance of a model $f$, the time indexes $t$ for evaluating the forecast errors $e_{t}$, given a forecasting model $f$ and a set of available historical observations $\boldsymbol{y} _{1:T} = \{y_1,…,y_T\}$. In a naive approach, one could use all available data for both model inference and evaluation. This would, however, result in a highly biased estimate of the model generalization performance. Less biased estimations could be attained instead by partitioning the available dataset into a *training dataset*, exclusive for model inference, and a *test dataset*, used for model evaluation (\ref{training-test-split}). Once an estimate for the model performance is attained, a separate model inference using both partitions can be carried out, so that the epistemic part of the generalization error, resulting from limited data in model inference, is kept at a minimum. 
+Assessing the performance of a model $f$ requires defining the time indexes $t$ for evaluating the forecast errors $e_{t}$ . In a naive approach, one could use all available data for both model inference and evaluation. This would, however, result in a highly biased estimate of the model generalization performance. Less biased estimations could be attained instead by partitioning the available dataset into a *training dataset* $\boldsymbol{y} _{1:T} = \{y_1,…,y_T\}$, exclusive for model inference, and a *test dataset* $\boldsymbol{y} _{T+1:T'} = \{y_{T+1},…,y_{T'}\}$, used for model evaluation (\ref{training-test-split}). Once an estimate for the model performance is attained, a separate model inference using both partitions can be carried out, so that the epistemic part of the generalization error, resulting from limited data in model inference, is kept at a minimum. 
 
 ![training-test-split](https://otexts.com/fpp2/fpp_files/figure-html/traintest-1.png)
 
@@ -72,19 +72,19 @@ Fig ???. The growing window cross-validation scheme (adapted from \cite{krispin2
 
 Many different metrics exist, each one summarizing the error distribution in a different way. Some of the most usual definitions  are presented from \ref{eq-rmse} to \{eq-} (see e.g., \cite{wu2019graphwavenet}, \cite{liu2019st-mgcn},  \cite{hyndman2006metrics}). In particular, $MASE$ and $MdRAE$ use as denominator the forecast errors of the naïve model, which takes the last known value to forecast the next point. The naïve model can be shown to be optimal for a random walk process (\cite{hyndman2006metrics}).
 $$
-RMSE = \sqrt{\mathbb{E}(e_t^2)} = \sqrt{\frac{1}{N}\sum_{t=1}^N e^2_t}
+RMSE = \sqrt{\mathbb{E}(e_t^2)} = \sqrt{\frac{1}{(T'-T-1)}\sum_{t=T+1}^{T'} e^2_t}
 $$
 
 $$
-MAE = \mathbb{E}(|e_t|) = \frac{1}{N}\sum_{t=1}^N |e_t|
+MAE = \mathbb{E}(|e_t|) = \frac{1}{(T'-T-1)}\sum_{t=T+1}^{T'} |e_t|
 $$
 
 $$
-MAPE = \mathbb{E}(|e_t/y_t|\cdot 100\%) = \frac{100\%}{N}\sum_{t=1}^N \left|\frac{e_t}{y_t}\right|
+MAPE = \mathbb{E}(|e_t/y_t|\cdot 100\%) = \frac{100\%}{(T'-T-1)}\sum_{t=T+1}^{T'} \left|\frac{e_t}{y_t}\right|
 $$
 
 $$
-sMAPE = \frac{100\%}{N}\sum^N_{T=1} \frac{|e_t|}{(|y_{t}|+|\hat{y}_{t}|)/2}
+sMAPE = \frac{100\%}{T'-T-1}\sum^{T'}_{T=T+1} \frac{|e_t|}{(|y_{t}|+|\hat{y}_{t}|)/2}
 $$
 
 $$
@@ -130,13 +130,13 @@ In general, forecasting approaches, statistical or machine learning-based, attai
 
 The likelihood is, in essence, the relative number of ways that a configuration of model parameters can produce the provided data (\cite{mcelreath2020rethinking}). In contrast, loss functions summarize the distribution of forecast errors, much like accuracy metrics. Loss functions are subject to an additional requirement, however, which is their suitability  as objective function in the convex optimization underlying most of model inferencing schemes. Therefore, although it is important that the objective function guiding the model inference is coherent with the metrics used for evaluating the models, they do not have to coincide. The Mean Squared Error (MSE, \ref{eq-mse}) is a typical choice for a loss function for continuous-type responses, as it accounts for both bias and variance errors, besides exhibiting smoothness amenable to convex optimization (\cite{goodfellow2016deep}). 
 $$
-MSE = \frac{1}{N}\sum_{t=1}^N e^2_t
+MSE = \frac{1}{T}\sum_{t=1}^T e^2_t
 $$
 \ref{methods-overview} provides an overview of the approaches reviewed in this work. We start by presenting simple forecasting approaches[¹], which are often used as baselines for other approaches (\cite{hyndman2018principles}. 
 
 [^1]: Analogous to Murphy in \cite{murphy2012probabilistic}, we draw distinctions between the concepts of method, model, and model inference algorithm. A method can specify (1) how training data is used to generate a model (training, model inference, i.e., inference of its parameters) and (2) how a generated model uses its parameters and its input to make a prediction (inference). We denote by a model any unique configuration of parameters in a space defined by a method. Equivalently, a model represents a response surface (deterministic model) or the distribution of the response conditional on its inputs (probabilistic model).
 
-**![methods-overview](/home/jonasmmiguel/Desktop/methods-overview.png)**Fig. ???. Forecasting methods presented in this work. Most of these methods only model dependencies of temporal nature and are presented in this section. Exception are DCRNN, ST-GCN, and Graph WaveNet (ML-based), presented in section \ref{spatio-temporal-forecasting}. They explicitly approach a more general forecasting setting where capturing both temporal and spatial dependencies is a central concern.   
+**![methods-overview](/home/jonasmmiguel/Desktop/methods-overview.png)**Fig. ???. Forecasting approaches presented in this work. Most of these methods only model dependencies of temporal nature and are presented in this section. Exception are DCRNN, ST-GCN, and Graph WaveNet (ML-based), presented in section \ref{spatio-temporal-forecasting}. They explicitly approach a more general forecasting setting where capturing both temporal and spatial dependencies is a central concern.   
 
 #### 2.3.3.1 Baseline Approaches
 
@@ -273,6 +273,24 @@ Fig ???. The DCRNN architecture (adapted from \cite{li2018dcrnn}).
 
 Fig. ??? The Graph WaveNet architecture. 
 
-### 2.3.1 Metrics
+### 2.3.1 Accuracy Metrics
 
-- (spatio-temporal/multivariate version)
+The usual accuracy metrics in spatio-temporal forecasting are similar to their counterparts in the temporal setting, the main difference concerning the aggregation over the $|V|$ regions. Some of the most popular are $MAE$ (Mean Absolute Error, \autoref{mae}), $MAPE$ (Mean Absolute Percentual Error, \autoref{mape}), $RMSE$ (Root Mean Squared Error, \autoref{rmse}).
+$$
+\begin{equation}\label{mae}
+    MAE = \frac{1}{|V|(T'-T-1)} \Sigma_{v=1}^{|V|} \Sigma_{t=T+1}^{T'} | \bm{\hat{y}}^{(v)}_{t} - \bm{y}_{t}^{(v)} |
+\end{equation}
+$$
+
+$$
+\begin{equation}\label{mape}
+    MAPE = \frac{100\%}{|V|(T'-T-1)}\Sigma_{v=1}^{|V|} \Sigma_{t=T+1}^{T'} \frac{ | \bm{\hat{y}}^{(v)}_{t} - \bm{y}_{t}^{(v)} | }{ |\bm{y}_{t}^{(v)}| }
+\end{equation}
+$$
+
+$$
+\begin{equation}\label{rmse}
+    RMSE = \sqrt{ \frac{1}{|V|(T'-T-1)} \Sigma_{v=1}^{|V|} \Sigma_{t=T+1}^{T'} (\bm{\hat{y}}^{(v)}_{t} - \bm{y}_{t}^{(v)})^2 }
+\end{equation}
+$$
+
