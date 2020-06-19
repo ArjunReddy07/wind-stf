@@ -275,7 +275,7 @@ Fig. ??? The Graph WaveNet architecture.
 
 ### 2.3.1 Accuracy Metrics
 
-The usual accuracy metrics in spatio-temporal forecasting are similar to their counterparts in the temporal setting, the main difference concerning the aggregation over the $|V|$ regions. Some of the most popular are $MAE$ (Mean Absolute Error, \autoref{mae}), $MAPE$ (Mean Absolute Percentual Error, \autoref{mape}), $RMSE$ (Root Mean Squared Error, \autoref{rmse}).
+The usual accuracy metrics in spatio-temporal forecasting are similar to their counterparts in the temporal setting, the main difference concerning the aggregation over the $|V|$ regions. We present the most popular ones in \autoref{mae},\ autoref{mape}, \autoref{rmse}.
 $$
 \begin{equation}\label{mae}
     MAE = \frac{1}{|V|(T'-T-1)} \Sigma_{v=1}^{|V|} \Sigma_{t=T+1}^{T'} | \bm{\hat{y}}^{(v)}_{t} - \bm{y}_{t}^{(v)} |
