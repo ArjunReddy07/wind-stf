@@ -22,6 +22,8 @@ library(TSstudio)
 library(lubridate)
 library(xts)
 
+library(units)
+
 # Defining constants ===========================================
 # Uber Color Schemes
 # colorscheme_uber <- data.table(
@@ -116,6 +118,9 @@ GetPowerInstalledTimeSeries <- function(.power.installed=power.installed, colnam
   return(power.installed.xts)
 }
 
+NonNAindex <- which(!is.na(z))
+firstNonNA <- min(NonNAindex)
+
 GetAllCapacityFactorsTimeSeries <- function(power.generated.xts, power.installed.xts){
   cf <- power.generated.xts/power.installed.xts
   cf <- na.fill(cf, fill=0)  # handle NAs resulting from divisions by zero (no power.installed)
@@ -201,7 +206,7 @@ power.installed.xts <- GetPowerInstalled(turbines.metadata) %>%
 capacity.factors <- GetAllCapacityFactorsTimeSeries(power.generated.xts, power.installed.xts)
 
 # Get matrix: correlation matrix for generated power
-corr.cf <- cor(capacity.factors, method = "spearman")[names(power.generated.xts)]
+corr.cf <- cor(capacity.factors, method = "spearman")
 
 # Get centroid of turbines locations by district
 turbines.centroids <- GetTurbinesCentroids()
@@ -209,14 +214,52 @@ turbines.centroids <- GetTurbinesCentroids()
 # Euclidean distances between pairs of centroids
 distances.centroids <- GetTurbinesCentroidsDistances(turbines.centroids)
 
-# Get lowest installed power in every district pair
-
 # TS pairs: a dataframe characterising pairs of time series
 district.pairs <- combn( unique( turbines.metadata$NUTS_ID ), 2 )
 district.pairs.id <- paste(district.pairs[1,], district.pairs[2,], sep="-")
-ts.pairs <- data.table(pairs.id=district.pairs.id)
 
-#p <- ggplot(x=distances.centroids.vector, y=corr.cf.vector) + geom_point()
-#ggplotly(p)
+GetDistrictPowerInstalled <- function(id){
+  return( power.installed.xts[ end(power.installed.xts), id ] )
+}
+
+# some districts were not generating any wind power for most of the period. Better not to consider them.
+GetAllDistrictAvgCf <- function(){
+  cf.mean <- apply( capacity.factors, MARGIN=2, mean)
+  return( cf.mean )
+}
+
+GetDistrictAvgCf <- function(id){
+  return( cf.mean[ id ] )
+}
+
+min.power.installed <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictPowerInstalled) %>%  # get power installed for every cell in district.pairs
+                       apply( . , MARGIN=2, FUN=min)                                            # get minimum power installed in district pair pair
+
+cf.mean <- GetAllDistrictAvgCf()
+min.avg.cf <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictAvgCf) %>%
+              apply( . , MARGIN=2, FUN=min)
+
+starting.dates <- GetAllDistrictFirstCommissioning()
+latest.production.start <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictAvgCf) %>%
+                           apply( . , MARGIN=2, FUN=min)
+
+
+ts.pairs <- data.table(pairs.id=district.pairs.id,
+                       distances=TransformMatrixIntoVector(distances.centroids),
+                       spearman.corr=TransformMatrixIntoVector(corr.cf),
+                       least.power=min.power.installed,
+                       min.avg.cf=min.avg.cf,
+                       latest.start=)
+
+# p <- ggplot(x=distances.centroids.vector, y=corr.cf.vector) + geom_point()
+# ggplotly(p)
+#
+plot_ly(x=ts.pairs$distances,
+        y=ts.pairs$spearman.corr,
+        color=ts.pairs$min.avg.cf,
+        type = 'scatter',
+        text = ts.pairs$pairs.id,
+        alpha=0.2,)
+
 
 
