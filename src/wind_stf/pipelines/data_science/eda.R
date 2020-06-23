@@ -69,6 +69,73 @@ tryCatch(
   }
 )
 
+turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
+
+# Preprocessing  ===========================================
+# Transform a matrix upper diagonal into a vector
+TransformMatrixIntoVector <- function(A){
+  bool.mask <- upper.tri(A, diag = FALSE)
+  V <- A[bool.mask]
+  return(V)
+}
+
+
+GetPowerInstalled <- function(metadata=turbines.metadata){
+  power.installed.deltas <- aggregate(power ~ dt + NUTS_ID, data=metadata, sum)  # installed power aggregated for sameday, same district commissionings
+
+  power.installed <- power.installed.deltas %>%
+    arrange(NUTS_ID, dt) %>%
+    group_by(NUTS_ID) %>%
+    mutate(power.tot = cumsum(power))
+
+  return(power.installed)
+}
+
+GetPowerInstalledTimeSeries <- function(.power.installed=power.installed, colnames){
+  blank.xts <- xts(x=NULL,
+                   seq(from=min(.power.installed$dt) + hours(1),
+                       to=as.Date("2015-12-31") + hours(23),
+                       by="hour"))
+
+  .power.installed <- select(.power.installed, -power)
+  power.installed.xts <- read.zoo(.power.installed, split="NUTS_ID") %>%
+    merge.xts(blank.xts,
+              .,
+              fill=na.locf) %>%
+    na.fill(., fill=0) %>%
+    .["20150101/20151231"]
+
+  power.installed.xts <- power.installed.xts[, colnames]  # order columns the same way of power.generated.xts
+
+  # tests for GetPowerInstalledTimeSeries
+  # assertive.base::are_identical(sum(new.commissionings$power), max(capacity.installed$power))
+  # assertive.properties::is_monotonic_increasing(capacity.installed$power)
+  # sum(is.na(power.installed.xts)) == 0
+  # sum(names(power.installed.xts) == names(power.generated.xts))
+
+  return(power.installed.xts)
+}
+
+GetAllCapacityFactorsTimeSeries <- function(power.generated.xts, power.installed.xts){
+  cf <- power.generated.xts/power.installed.xts
+  cf <- na.fill(cf, fill=0)  # handle NAs resulting from divisions by zero (no power.installed)
+
+  # unit test for GetCapacityFactor
+  # GetColumnsContainingNA(cf, view=TRUE)
+
+  return(cf)
+}
+
+GetColumnsContainingNA <- function(df, view=FALSE){
+  if(sum(is.na(cf)) != 0) {
+    columns.with.na <- df[,which(sapply(df, function(x) sum(is.na(x))) > 0)]
+    columns.with.na.names <- names(columns.with.na)
+    if(view) View(columns.with.na)
+    return(columns.with.na.names)
+  }
+  else return("No NA found")
+}
+
 geodata.de <- geodata[which(geodata$CNTR_CODE == 'DE'), ]
 geodata.eu <- geodata[geodata$CNTR_CODE %in% c("DK", "PL", "CZ", "SK", "CH", "AT", "FR", "BE", "LU", "NL"), ]  # DE neighboring countries
 
@@ -93,108 +160,63 @@ turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
 # file.paths <- paste("./power-generation/", file.names, sep="")
 # power.generated <- do.call(rbind, lapply(file.paths,read.csv))
 
-power.generated <- read.csv("./power-generation/wpinfeed_inkW_nuts3_2015_utc.csv")  # TODO: drop districts not in geodata_de$NUTS_ID
-power.generated$X <- ymd_hms(power.generated$X, tz="UTC")
-rownames(power.generated) <- power.generated$X
-power.generated <- select(power.generated, -X)
+GetPowerGeneratedTS <- function(){
+  power.generated <- read.csv("./power-generation/wpinfeed_inkW_nuts3_2015_utc.csv")  # TODO: drop districts not in geodata.de$NUTS_ID
+  power.generated$X <- ymd_hms(power.generated$X, tz="UTC")
+  rownames(power.generated) <- power.generated$X
+  power.generated <- select(power.generated, -X)
 
-power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
-
-# Preprocessing  ===========================================
-# TODO: why districts in power.generated not all in geodata_de districts with power.installed>0? Hypotheses: (1) geodata_de, power.generated with different NUTS3 definition
-colnames(power.generated) %in% geodata_de[which(geodata_de$power.installed>0),]$NUTS_ID
-
-GetPowerInstalled <- function(metadata=turbines.metadata){
-  power.installed.deltas <- aggregate(power ~ dt + NUTS_ID, data=metadata, sum)  # installed power aggregated for sameday, same district commissionings
-
-  power.installed <- power.installed.deltas %>%
-    arrange(NUTS_ID, dt) %>%
-    group_by(NUTS_ID) %>%
-    mutate(power.tot = cumsum(power))
-
-  return(power.installed)
+  power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
+  return(power.generated.xts)
 }
 
-GetPowerInstalledTimeSeries <- function(.power.installed=power.installed){
-  blank.xts <- xts(x=NULL,
-                   seq(from=min(.power.installed$dt) + hours(1),
-                       to=as.Date("2015-12-31") + hours(23),
-                       by="hour"))
-
-  .power.installed <- select(.power.installed, -power)
-  power.installed.xts <- read.zoo(.power.installed, split="NUTS_ID") %>%
-    merge.xts(blank.xts,
-              .,
-              fill=na.locf) %>%
-    na.fill(., fill=0) %>%
-    .["20150101/20151231"]
-
-  power.installed.xts <- power.installed.xts[, names(power.generated.xts)]  # order columns the same way of power.generated.xts
-
-  # tests for GetPowerInstalledTimeSeries
-  # assertive.base::are_identical(sum(new.commissionings$power), max(capacity.installed$power))
-  # assertive.properties::is_monotonic_increasing(capacity.installed$power)
-  # sum(is.na(power.installed.xts)) == 0
-  # sum(names(power.installed.xts) == names(power.generated.xts))
-
-  return(power.installed.xts)
+GetTurbinesCentroids <- function(){
+  turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
+  turbines.metadata.st$dt <- as.Date.character(turbines.metadata.st$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
+  turbines.metadata.st <- turbines.metadata.st[which(turbines.metadata.st$dt < "2015-12-31"),]
+  turbines.centroids <- aggregate(. ~ NUTS_ID, data= turbines.metadata.st[,c("lat", "lon", "NUTS_ID")], mean)
+  rownames(turbines.centroids) <- turbines.centroids$NUTS_ID
+  turbines.centroids <- turbines.centroids[ names(capacity.factors), ] # order centroids table the same way as capacity.factors, and corr.cf tables
+  turbines.centroids <- st_as_sf(turbines.centroids,
+                                 coords = c("lon", "lat"),
+                                 crs=st_crs(geodata.de))
+  return(turbines.centroids)
 }
 
-GetAllCapacityFactorsTimeSeries <- function(power.generated.xts, power.installed.xts){
-  cf <- power.generated.xts/power.installed.xts
-  cf <- na.fill(cf, fill=0)  # handle NAs resulting from divisions by zero (no power.installed)
-
-  # unit test for GetCapacityFactor
-  GetColumnsContainingNA(cf, view=TRUE)
-
-  return(cf)
+GetTurbinesCentroidsDistances <- function(turbines.centroids){
+  distances.centroids <- st_distance(turbines.centroids)
+  rownames(distances.centroids) <- turbines.centroids$NUTS_ID
+  colnames(distances.centroids) <- turbines.centroids$NUTS_ID
+  return(distances.centroids)
 }
 
-GetColumnsContainingNA <- function(df, view=FALSE){
-  if(sum(is.na(cf)) != 0) {
-    columns.with.na <- df[,which(sapply(df, function(x) sum(is.na(x))) > 0)]
-    columns.with.na.names <- names(columns.with.na)
-    if(view) View(columns.with.na)
-    return(columns.with.na.names)
-  }
-  else return("No NA found")
-}
+# EDA  ===========================================
+# TODO: why districts in power.generated not all in geodata.de districts with power.installed>0? Hypotheses: (1) geodata.de, power.generated with different NUTS3 definition
+#colnames(power.generated) %in% geodata.de[which(geodata.de$power.installed>0),]$NUTS_ID
+
+power.generated.xts <- GetPowerGeneratedTS()
+power.installed.xts <- GetPowerInstalled(turbines.metadata) %>%
+  GetPowerInstalledTimeSeries(., colnames=names(power.generated.xts))
+
+capacity.factors <- GetAllCapacityFactorsTimeSeries(power.generated.xts, power.installed.xts)
 
 # Get matrix: correlation matrix for generated power
-corr.cf <- cor(cf, method = "spearman")
+corr.cf <- cor(capacity.factors, method = "spearman")[names(power.generated.xts)]
 
-# Get matrix: pair-wise districts centroids distances
-geodata.districts.producing <- geodata.de[which(geodata.de$NUTS_ID %in% colnames(power.generated)),]
-geodata.districts.producing.centroids <- st_centroid(geodata.districts.producing)
-rownames(geodata.districts.producing.centroids) <- geodata.districts.producing.centroids$NUTS_ID
-geodata.districts.producing.centroids <- geodata.districts.producing.centroids[names(power.generated.xts),]    # order centroids dataframe the same way as power.generated.xts
+# Get centroid of turbines locations by district
+turbines.centroids <- GetTurbinesCentroids()
 
-distances.nuts3.centroids <- st_distance(geodata.districts.producing.centroids)
-rownames(distances.nuts3.centroids) <- geodata.districts.producing.centroids$NUTS_ID
-colnames(distances.nuts3.centroids) <- geodata.districts.producing.centroids$NUTS_ID
+# Euclidean distances between pairs of centroids
+distances.centroids <- GetTurbinesCentroidsDistances(turbines.centroids)
 
-distances.nuts3 <- st_distance(geodata.districts.producing)
-rownames(distances.nuts3) <- geodata.districts.producing$NUTS_ID
-colnames(distances.nuts3) <- geodata.districts.producing$NUTS_ID
+# Get lowest installed power in every district pair
 
-turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
-turbines.centroids <- turbines.metadata.st[, c("NUTS_ID", "lon", "lat")] %>%
-  tibble::rownames_to_column("NUTS_ID") %>%
-  group_by(NUTS_ID) %>%
-  geosphere::centroid(.)
+# TS pairs: a dataframe characterising pairs of time series
+district.pairs <- combn( unique( turbines.metadata$NUTS_ID ), 2 )
+district.pairs.id <- paste(district.pairs[1,], district.pairs[2,], sep="-")
+ts.pairs <- data.table(pairs.id=district.pairs.id)
 
-# Transform a matrix upper diagonal into a vector
-TransformMatrixIntoVector <- function(A){
-  bool.mask <- upper.tri(A, diag = FALSE)
-  V <- A[bool.mask]
-  return(V)
-}
+#p <- ggplot(x=distances.centroids.vector, y=corr.cf.vector) + geom_point()
+#ggplotly(p)
 
-plot_ly(x=TransformMatrixIntoVector(distances.nuts3.centroids), y=TransformMatrixIntoVector(corr.cf))
 
-correlogram.data <- data.table(cbind(TransformMatrixIntoVector(distances.nuts3.centroids), TransformMatrixIntoVector(corr.cf)))
-colnames(correlogram.data) <- c("centroid.distance", "spearman.correlation")
-ggplot(correlogram.data, aes(x=centroid.distance, y=spearman.correlation)) + geom_point()
-
-beepr::beep(sound=4)
-# TODO: not all colnames in power.generated.xts can be found in turbines.metadata$NUTS_ID
