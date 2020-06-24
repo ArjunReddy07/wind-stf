@@ -42,38 +42,69 @@ if(!dir.exists("./metadata")){
   setwd("./data/01_raw")
 }
 
-# Get geospatial data: first try from local files, then download from GISCO if necessary
-tryCatch(
-  {
-    # attempt to read file locally
-    # use assign so you can access the variable outside of the function
-    assign("geodata", st_read("./geospatial/geodata.shp"), envir = .GlobalEnv)
-    print("Loaded geodata from local storage.")
-  },
-  error = function( err ){
-    print("Could not read data from current directory, attempting download...")
-    tryCatch(
-      {
-        assign("geodata",
-               get_eurostat_geospatial(
-                 output_class = "sf",
-                 resolution = "1",
-                 nuts_level = 3,
-                 year = 2013),
-               envir = .GlobalEnv)
-        st_write(geodata, "./geospatial/geodata.shp")
-        print("Loaded geodata from GISCO server. Saved it locally.")
-      },
-      error = function( err ){
-        print("Could not download geodata from GISCO. Aborting execution.")
-      }
-    )
-  }
-)
+LoadGeodata <- function(){
+  # Get geospatial data: first try from local files, then download from GISCO if necessary
+  tryCatch(
+    {
+      # attempt to read file locally
+      # use assign so you can access the variable outside of the function
+      assign("geodata", st_read("./geospatial/geodata.shp"), envir = .GlobalEnv)
+      print("Loaded geodata from local storage.")
+    },
+    error = function( err ){
+      print("Could not read data from current directory, attempting download...")
+      tryCatch(
+        {
+          assign("geodata",
+                 get_eurostat_geospatial(
+                   output_class = "sf",
+                   resolution = "1",
+                   nuts_level = 3,
+                   year = 2013),
+                 envir = .GlobalEnv)
+          st_write(geodata, "./geospatial/geodata.shp")
+          print("Loaded geodata from GISCO server. Saved it locally.")
+        },
+        error = function( err ){
+          print("Could not download geodata from GISCO. Aborting execution.")
+        }
+      )
+    }
+  )
+
+  geodata$de <- geodata[which(geodata$CNTR_CODE == 'DE'), ]
+  geodata$eu <- geodata[geodata$CNTR_CODE %in% c("DK", "PL", "CZ", "SK", "CH", "AT", "FR", "BE", "LU", "NL"), ]  # DE neighboring countries
+  return(list('de' = geodata$de, 'eu' = geodata$eu))
+}
+geodata <- LoadGeodata()
+
+# Load metadata: wind turbines spatial data frame
+turbines.metadata <- st_as_sf(
+  read.csv("metadata/wind_turbine_data.csv", sep=";"),
+  coords = c("lon", "lat"),
+  crs=st_crs(geodata$de))
+
+turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
 
 turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
 
+GetPowerGeneratedTS <- function(){
+  power.generated <- read.csv("./power-generation/wpinfeed_inkW_nuts3_2015_utc.csv")  # TODO: drop districts not in geodata$de$NUTS_ID
+  power.generated$X <- ymd_hms(power.generated$X, tz="UTC")
+  rownames(power.generated) <- power.generated$X
+  power.generated <- select(power.generated, -X)
+
+  power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
+  return(power.generated.xts)
+}
+
+power.generated.xts <- GetPowerGeneratedTS()
+
 # Preprocessing  ===========================================
+districts.blacklist <- c('DE409', 'DE40C', 'DE403')  # districts TS which represent outliers in correlogram
+turbines.metadata <- turbines.metadata[ which( turbines.metadata$NUTS_ID != districts.blacklist), ]
+turbines.metadata.st <- turbines.metadata.st[ which( turbines.metadata.st$NUTS_ID != districts.blacklist), ]
+
 # Transform a matrix upper diagonal into a vector
 TransformMatrixIntoVector <- function(A){
   bool.mask <- upper.tri(A, diag = FALSE)
@@ -118,8 +149,6 @@ GetPowerInstalledTimeSeries <- function(.power.installed=power.installed, colnam
   return(power.installed.xts)
 }
 
-NonNAindex <- which(!is.na(z))
-firstNonNA <- min(NonNAindex)
 
 GetAllCapacityFactorsTimeSeries <- function(power.generated.xts, power.installed.xts){
   cf <- power.generated.xts/power.installed.xts
@@ -141,17 +170,6 @@ GetColumnsContainingNA <- function(df, view=FALSE){
   else return("No NA found")
 }
 
-geodata.de <- geodata[which(geodata$CNTR_CODE == 'DE'), ]
-geodata.eu <- geodata[geodata$CNTR_CODE %in% c("DK", "PL", "CZ", "SK", "CH", "AT", "FR", "BE", "LU", "NL"), ]  # DE neighboring countries
-
-# Load metadata: wind turbines spatial data frame
-turbines.metadata <- st_as_sf(
-  read.csv("metadata/wind_turbine_data.csv", sep=";"),
-  coords = c("lon", "lat"),
-  crs=st_crs(geodata.de))
-
-turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
-
 # checking for data loss during transformation
 sum(is.na(turbines.metadata))
 "DE146" %in% unique(turbines.metadata$NUTS_ID)
@@ -165,18 +183,11 @@ turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
 # file.paths <- paste("./power-generation/", file.names, sep="")
 # power.generated <- do.call(rbind, lapply(file.paths,read.csv))
 
-GetPowerGeneratedTS <- function(){
-  power.generated <- read.csv("./power-generation/wpinfeed_inkW_nuts3_2015_utc.csv")  # TODO: drop districts not in geodata.de$NUTS_ID
-  power.generated$X <- ymd_hms(power.generated$X, tz="UTC")
-  rownames(power.generated) <- power.generated$X
-  power.generated <- select(power.generated, -X)
-
-  power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
-  return(power.generated.xts)
-}
-
 GetTurbinesCentroids <- function(){
   turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
+  turbines.metadata.st <- turbines.metadata.st[ which( (turbines.metadata.st$NUTS_ID != 'DE409') &
+                                                       (turbines.metadata.st$NUTS_ID != 'DE40C') ), ]
+
   turbines.metadata.st$dt <- as.Date.character(turbines.metadata.st$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
   turbines.metadata.st <- turbines.metadata.st[which(turbines.metadata.st$dt < "2015-12-31"),]
   turbines.centroids <- aggregate(. ~ NUTS_ID, data= turbines.metadata.st[,c("lat", "lon", "NUTS_ID")], mean)
@@ -184,7 +195,7 @@ GetTurbinesCentroids <- function(){
   turbines.centroids <- turbines.centroids[ names(capacity.factors), ] # order centroids table the same way as capacity.factors, and corr.cf tables
   turbines.centroids <- st_as_sf(turbines.centroids,
                                  coords = c("lon", "lat"),
-                                 crs=st_crs(geodata.de))
+                                 crs=st_crs(geodata$de))
   return(turbines.centroids)
 }
 
@@ -196,10 +207,13 @@ GetTurbinesCentroidsDistances <- function(turbines.centroids){
 }
 
 # EDA  ===========================================
-# TODO: why districts in power.generated not all in geodata.de districts with power.installed>0? Hypotheses: (1) geodata.de, power.generated with different NUTS3 definition
-#colnames(power.generated) %in% geodata.de[which(geodata.de$power.installed>0),]$NUTS_ID
-
-power.generated.xts <- GetPowerGeneratedTS()
+# TODO: why districts in power.generated not all in geodata$de districts with power.installed>0? Hypotheses: (1) geodata$de, power.generated with different NUTS3 definition
+#colnames(power.generated) %in% geodata$de[which(geodata$de$power.installed>0),]$NUTS_ID
+DropBlackMailedDistricts <- function(power.generated.xts){
+  power.generated.xts <- select(power.generated.xts, -districts.blacklist )
+  return(power.generated.xts)
+}
+power.generated.xts <- DropBlackMailedDistricts(power.generated.xts)
 power.installed.xts <- GetPowerInstalled(turbines.metadata) %>%
   GetPowerInstalledTimeSeries(., colnames=names(power.generated.xts))
 
@@ -207,7 +221,7 @@ capacity.factors <- GetAllCapacityFactorsTimeSeries(power.generated.xts, power.i
 
 # Get matrix: correlation matrix for generated power
 corr.cf <- cor(capacity.factors, method = "spearman")
-
+corr.cf.pearson <- cor(capacity.factors, method = "pearson")
 # Get centroid of turbines locations by district
 turbines.centroids <- GetTurbinesCentroids()
 
@@ -247,13 +261,12 @@ latest.production.start <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictA
 ts.pairs <- data.table(pairs.id=district.pairs.id,
                        distances=TransformMatrixIntoVector(distances.centroids),
                        spearman.corr=TransformMatrixIntoVector(corr.cf),
+                       pearson.corr = TransformMatrixIntoVector(corr.cf.pearson),
                        least.power=min.power.installed,
-                       min.avg.cf=min.avg.cf,
-                       latest.start=)
+                       min.avg.cf=min.avg.cf)
 
 # p <- ggplot(x=distances.centroids.vector, y=corr.cf.vector) + geom_point()
 # ggplotly(p)
-#
 plot_ly(x=ts.pairs$distances,
         y=ts.pairs$spearman.corr,
         color=ts.pairs$min.avg.cf,
@@ -261,5 +274,22 @@ plot_ly(x=ts.pairs$distances,
         text = ts.pairs$pairs.id,
         alpha=0.2,)
 
+plot_ly(x=ts.pairs$distances,
+        y=ts.pairs$pearson.corr,
+        color=ts.pairs$min.avg.cf,
+        type = 'scatter',
+        text = ts.pairs$pairs.id,
+        alpha=0.2,)
 
+# show time series
+p <- ggplot(data = capacity.factors, aes(x = index(capacity.factors), y = capacity.factors[,'DEA56'])) +
+      geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
+ggplotly(p)
 
+# plot seasonal time series
+ts_seasonal(capacity.factors[,'DEA56'])
+capacity.factors.daily <- aggregate()
+
+# plot cross-correlogram
+a <- ccf(rank(as.ts(capacity.factors[,'DEA56'])), rank(as.ts(capacity.factors[,'DEA59'])), plot=TRUE)
+ccf((as.ts(capacity.factors[,'DEA56'])), (as.ts(capacity.factors[,'DEA59'])), plot=TRUE)
