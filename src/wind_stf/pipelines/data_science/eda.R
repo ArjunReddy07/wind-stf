@@ -72,9 +72,8 @@ LoadGeodata <- function(){
     }
   )
 
-  geodata$de <- geodata[which(geodata$CNTR_CODE == 'DE'), ]
-  geodata$eu <- geodata[geodata$CNTR_CODE %in% c("DK", "PL", "CZ", "SK", "CH", "AT", "FR", "BE", "LU", "NL"), ]  # DE neighboring countries
-  return(list('de' = geodata$de, 'eu' = geodata$eu))
+  return(list('de' = geodata[which(geodata$CNTR_CODE == 'DE'), ],
+              'eu' = geodata[geodata$CNTR_CODE %in% c("DK", "PL", "CZ", "SK", "CH", "AT", "FR", "BE", "LU", "NL"), ]))  # DE neighboring countries ))
 }
 geodata <- LoadGeodata()
 
@@ -97,8 +96,6 @@ GetPowerGeneratedTS <- function(){
   power.generated.xts <- xts(power.generated, order.by = ymd_hms(rownames(power.generated)))
   return(power.generated.xts)
 }
-
-power.generated.xts <- GetPowerGeneratedTS()
 
 # Preprocessing  ===========================================
 districts.blacklist <- c('DE409', 'DE40C', 'DE403')  # districts TS which represent outliers in correlogram
@@ -185,8 +182,7 @@ turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
 
 GetTurbinesCentroids <- function(){
   turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
-  turbines.metadata.st <- turbines.metadata.st[ which( (turbines.metadata.st$NUTS_ID != 'DE409') &
-                                                       (turbines.metadata.st$NUTS_ID != 'DE40C') ), ]
+  turbines.metadata.st[ , !(turbines.metadata.st$NUTS_ID %in% districts.blacklist)]
 
   turbines.metadata.st$dt <- as.Date.character(turbines.metadata.st$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
   turbines.metadata.st <- turbines.metadata.st[which(turbines.metadata.st$dt < "2015-12-31"),]
@@ -210,9 +206,10 @@ GetTurbinesCentroidsDistances <- function(turbines.centroids){
 # TODO: why districts in power.generated not all in geodata$de districts with power.installed>0? Hypotheses: (1) geodata$de, power.generated with different NUTS3 definition
 #colnames(power.generated) %in% geodata$de[which(geodata$de$power.installed>0),]$NUTS_ID
 DropBlackMailedDistricts <- function(power.generated.xts){
-  power.generated.xts <- select(power.generated.xts, -districts.blacklist )
-  return(power.generated.xts)
+  return ( power.generated.xts[ , !(names(power.generated.xts) %in% districts.blacklist)] )
 }
+
+power.generated.xts <- GetPowerGeneratedTS()
 power.generated.xts <- DropBlackMailedDistricts(power.generated.xts)
 power.installed.xts <- GetPowerInstalled(turbines.metadata) %>%
   GetPowerInstalledTimeSeries(., colnames=names(power.generated.xts))
@@ -246,50 +243,93 @@ GetDistrictAvgCf <- function(id){
   return( cf.mean[ id ] )
 }
 
-min.power.installed <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictPowerInstalled) %>%  # get power installed for every cell in district.pairs
-                       apply( . , MARGIN=2, FUN=min)                                            # get minimum power installed in district pair pair
+# min.power.installed <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictPowerInstalled) %>%  # get power installed for every cell in district.pairs
+#                        apply( . , MARGIN=2, FUN=min)                                            # get minimum power installed in district pair pair
 
 cf.mean <- GetAllDistrictAvgCf()
 min.avg.cf <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictAvgCf) %>%
               apply( . , MARGIN=2, FUN=min)
 
-starting.dates <- GetAllDistrictFirstCommissioning()
-latest.production.start <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictAvgCf) %>%
-                           apply( . , MARGIN=2, FUN=min)
-
+# starting.dates <- GetAllDistrictFirstCommissioning()
+# latest.production.start <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictAvgCf) %>%
+#                            apply( . , MARGIN=2, FUN=min)
 
 ts.pairs <- data.table(pairs.id=district.pairs.id,
-                       distances=TransformMatrixIntoVector(distances.centroids),
+                       id1=district.pairs[1,],
+                       id2=district.pairs[2,],
+                       distances= as.double( TransformMatrixIntoVector(distances.centroids) ),
                        spearman.corr=TransformMatrixIntoVector(corr.cf),
                        pearson.corr = TransformMatrixIntoVector(corr.cf.pearson),
-                       least.power=min.power.installed,
+                       # least.power=min.power.installed,
                        min.avg.cf=min.avg.cf)
 
-# p <- ggplot(x=distances.centroids.vector, y=corr.cf.vector) + geom_point()
+p <- ggplot(data=ts.pairs, aes(x=distances, y=spearman.corr)) +
+  geom_point(alpha = 0.1) +
+  xlab("Euclidean Distance [km]") +
+  ylab("Spearman Correlation [-]")
+p
+ggsave( '../08_reporting/correlation-spearman-vs-distance.png',
+  plot = p,
+  scale = golden_ratio,
+  width = 210/golden_ratio,
+  height = (210/golden_ratio)/golden_ratio,
+  units = 'mm',
+  dpi = 300,
+  limitsize = TRUE,
+)
+
+p <- ggplot(data=ts.pairs, aes(x=distances, y=pearson.corr)) +
+  geom_point(alpha = 0.1) +
+  xlab("Euclidean Distance [km]") +
+  ylab("Pearson Correlation [-]")
+p
+ggsave( '../08_reporting/correlation-pearson-vs-distance.png',
+  plot = p,
+  scale = golden_ratio,
+  width = 210/golden_ratio,
+  height = (210/golden_ratio)/golden_ratio,
+  units = 'mm',
+  dpi = 300,
+  limitsize = TRUE,
+)
+
 # ggplotly(p)
-plot_ly(x=ts.pairs$distances,
-        y=ts.pairs$spearman.corr,
-        color=ts.pairs$min.avg.cf,
-        type = 'scatter',
-        text = ts.pairs$pairs.id,
-        alpha=0.2,)
 
-plot_ly(x=ts.pairs$distances,
-        y=ts.pairs$pearson.corr,
-        color=ts.pairs$min.avg.cf,
-        type = 'scatter',
-        text = ts.pairs$pairs.id,
-        alpha=0.2,)
+#plot_ly(x=ts.pairs$distances,
+#        y=ts.pairs$spearman.corr,
+#        color=ts.pairs$min.avg.cf,
+#        type = 'scatter',
+#        text = ts.pairs$pairs.id,
+#        alpha=0.2,)
 
-# show time series
-p <- ggplot(data = capacity.factors, aes(x = index(capacity.factors), y = capacity.factors[,'DEA56'])) +
-      geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
-ggplotly(p)
+ # show time series
+ #p <- ggplot(data = capacity.factors, aes(x = index(capacity.factors), y = capacity.factors[,'DEA56'])) +
+ #      geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
+ #ggplotly(p)
+#
+# # plot seasonal time series
+# ts_seasonal(capacity.factors[,'DEA56'])
+# capacity.factors.daily <- aggregate()
+#
+ # plot cross-correlogram
 
-# plot seasonal time series
-ts_seasonal(capacity.factors[,'DEA56'])
-capacity.factors.daily <- aggregate()
+GetCCF <- function(id1, id2){
+  ccf.object <- ccf(rank(as.ts(capacity.factors[, id1])),
+                    rank(as.ts(capacity.factors[, id2])),
+                    lax.max = 72,
+                    plot = FALSE)
+  return(ccf.object$acf)
+}
 
-# plot cross-correlogram
-a <- ccf(rank(as.ts(capacity.factors[,'DEA56'])), rank(as.ts(capacity.factors[,'DEA59'])), plot=TRUE)
-ccf((as.ts(capacity.factors[,'DEA56'])), (as.ts(capacity.factors[,'DEA59'])), plot=TRUE)
+a <- GetCCF('DEA1B', 'DEA44')
+b <- GetCCF('DED43', 'DED43')
+
+ccf.object <- ccf(rank(as.ts(capacity.factors[, 'DED43'])),
+                  rank(as.ts(capacity.factors[, 'DED53'])),
+                  lag = 6,
+                  plot = TRUE)
+
+plot(x=seq(-6,6), y=ccf.object$acf)
+
+#ts.pairs$ccf =  mapply(ccf, capacity.factors, MoreArgs = list(lag.max = 72))
+#  ccf(rank(as.ts(capacity.factors[,'DEA56'])), rank(as.ts(capacity.factors[,'DEA59'])), lag.max = 72)
