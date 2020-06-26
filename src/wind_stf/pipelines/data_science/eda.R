@@ -84,7 +84,6 @@ turbines.metadata <- st_as_sf(
   crs=st_crs(geodata$de))
 
 turbines.metadata$dt <- as.Date.character(turbines.metadata$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
-
 turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
 
 GetPowerGeneratedTS <- function(){
@@ -99,8 +98,8 @@ GetPowerGeneratedTS <- function(){
 
 # Preprocessing  ===========================================
 districts.blacklist <- c('DE409', 'DE40C', 'DE403')  # districts TS which represent outliers in correlogram
-turbines.metadata <- turbines.metadata[ which( turbines.metadata$NUTS_ID != districts.blacklist), ]
-turbines.metadata.st <- turbines.metadata.st[ which( turbines.metadata.st$NUTS_ID != districts.blacklist), ]
+turbines.metadata <- turbines.metadata[ !( turbines.metadata$NUTS_ID %in% districts.blacklist), ]
+turbines.metadata.st <- turbines.metadata.st[ !( turbines.metadata.st$NUTS_ID %in% districts.blacklist), ]
 
 # Transform a matrix upper diagonal into a vector
 TransformMatrixIntoVector <- function(A){
@@ -182,13 +181,13 @@ turbines.metadata$NUTS_ID <- trimws(turbines.metadata$NUTS_ID)
 
 GetTurbinesCentroids <- function(){
   turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
-  turbines.metadata.st[ , !(turbines.metadata.st$NUTS_ID %in% districts.blacklist)]
+  turbines.metadata.st  <- turbines.metadata.st[ !(turbines.metadata.st$NUTS_ID %in% districts.blacklist), ]
 
   turbines.metadata.st$dt <- as.Date.character(turbines.metadata.st$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
   turbines.metadata.st <- turbines.metadata.st[which(turbines.metadata.st$dt < "2015-12-31"),]
   turbines.centroids <- aggregate(. ~ NUTS_ID, data= turbines.metadata.st[,c("lat", "lon", "NUTS_ID")], mean)
   rownames(turbines.centroids) <- turbines.centroids$NUTS_ID
-  turbines.centroids <- turbines.centroids[ names(capacity.factors), ] # order centroids table the same way as capacity.factors, and corr.cf tables
+  turbines.centroids2 <- turbines.centroids[ names(capacity.factors), ] # order centroids table the same way as capacity.factors, and corr.cf tables
   turbines.centroids <- st_as_sf(turbines.centroids,
                                  coords = c("lon", "lat"),
                                  crs=st_crs(geodata$de))
