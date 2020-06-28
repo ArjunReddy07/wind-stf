@@ -13,8 +13,7 @@ library(eurostat)
 library(tmap)    # for static and interactive maps
 # library(leaflet) # for interactive maps
 # library(mapview) # for interactive maps
-library(ggplot2) # tidyverse data visualization package
-library(plotly)
+
 #library(shiny)   # for web applications
 library(tmaptools)
 
@@ -241,7 +240,6 @@ GetAllDistrictAvgCf <- function(){
 GetDistrictAvgCf <- function(id){
   return( cf.mean[ id ] )
 }
-
 # min.power.installed <- apply(district.pairs, MARGIN=c(1,2), FUN=GetDistrictPowerInstalled) %>%  # get power installed for every cell in district.pairs
 #                        apply( . , MARGIN=2, FUN=min)                                            # get minimum power installed in district pair pair
 
@@ -262,73 +260,13 @@ ts.pairs <- data.table(pairs.id=district.pairs.id,
                        # least.power=min.power.installed,
                        min.avg.cf=min.avg.cf)
 
-p <- ggplot(data=ts.pairs, aes(x=distances, y=spearman.corr)) +
-  geom_point(alpha = 0.1) +
-  xlab("Euclidean Distance [km]") +
-  ylab("Spearman Correlation [-]")
-p
-ggsave( '../08_reporting/correlation-spearman-vs-distance.png',
-  plot = p,
-  scale = golden_ratio,
-  width = 210/golden_ratio,
-  height = (210/golden_ratio)/golden_ratio,
-  units = 'mm',
-  dpi = 300,
-  limitsize = TRUE,
-)
+power.generated.yearly <- apply(power.generated.xts, MARGIN = 2, sum)
 
-p <- ggplot(data=ts.pairs, aes(x=distances, y=pearson.corr)) +
-  geom_point(alpha = 0.1) +
-  xlab("Euclidean Distance [km]") +
-  ylab("Pearson Correlation [-]")
-p
-ggsave( '../08_reporting/correlation-pearson-vs-distance.png',
-  plot = p,
-  scale = golden_ratio,
-  width = 210/golden_ratio,
-  height = (210/golden_ratio)/golden_ratio,
-  units = 'mm',
-  dpi = 300,
-  limitsize = TRUE,
-)
-
-# ggplotly(p)
-
-#plot_ly(x=ts.pairs$distances,
-#        y=ts.pairs$spearman.corr,
-#        color=ts.pairs$min.avg.cf,
-#        type = 'scatter',
-#        text = ts.pairs$pairs.id,
-#        alpha=0.2,)
-
- # show time series
- #p <- ggplot(data = capacity.factors, aes(x = index(capacity.factors), y = capacity.factors[,'DEA56'])) +
- #      geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
- #ggplotly(p)
-#
-# # plot seasonal time series
-# ts_seasonal(capacity.factors[,'DEA56'])
-# capacity.factors.daily <- aggregate()
-#
- # plot cross-correlogram
-
-GetCCF <- function(id1, id2){
-  ccf.object <- ccf(rank(as.ts(capacity.factors[, id1])),
-                    rank(as.ts(capacity.factors[, id2])),
-                    lax.max = 72,
-                    plot = FALSE)
-  return(ccf.object$acf)
-}
-
-a <- GetCCF('DEA1B', 'DEA44')
-b <- GetCCF('DED43', 'DED43')
-
-ccf.object <- ccf(rank(as.ts(capacity.factors[, 'DED43'])),
-                  rank(as.ts(capacity.factors[, 'DED53'])),
-                  lag = 6,
-                  plot = TRUE)
-
-plot(x=seq(-6,6), y=ccf.object$acf)
-
-#ts.pairs$ccf =  mapply(ccf, capacity.factors, MoreArgs = list(lag.max = 72))
-#  ccf(rank(as.ts(capacity.factors[,'DEA56'])), rank(as.ts(capacity.factors[,'DEA59'])), lag.max = 72)
+save(geodata,
+     district.pairs,
+     ts.pairs,
+     power.generated.xts,
+     capacity.factors,
+     power.generated.yearly,
+     file = "../02_intermediate/eda.vars.RData")
+# load("../02_intermediate/eda.vars.RData")
