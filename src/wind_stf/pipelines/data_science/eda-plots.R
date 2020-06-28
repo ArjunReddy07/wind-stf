@@ -2,7 +2,10 @@ library(ggplot2) # tidyverse data visualization package
 library(plotly)
 library(xts)
 library(TSstudio)
-
+library(data.table)
+library(lubridate)
+library(dplyr)
+library(gridExtra)
 
 setwd("./data/08_reporting")
 golden_ratio <- (1+sqrt(5))/2
@@ -11,28 +14,65 @@ load("../02_intermediate/eda.vars.RData")
 
 ### What is a typical value for yearly WPG-kW? What districts present approx this value?
 # A: median = 79243199 [kW]; DEB22 79549998 [kW]
-p.wpg.yearly <- ggplot(data.frame(val=power.generated.yearly), aes(x=val)) +
-  geom_density() +
-  geom_rug(alpha=0.5) +
-  geom_vline(xintercept = median(power.generated.yearly), colour="green", linetype = "dashed") +
-  geom_text(aes(x=median(power.generated.yearly), label="median\n", y=0.05), colour="black", alpha=0.7, angle=90, text=element_text(size=11)) +
-  xlab("2015 Average yearly power generation by district [kW]") +
-  ylab("Estimated Density [-]") +
-  scale_x_log10()
-p.wpg.yearly
+#p.wpg.yearly <- ggplot(data.frame(val=power.generated.yearly), aes(x=val)) +
+#  geom_density() +
+#  geom_rug(alpha=0.5) +
+#  geom_vline(xintercept = median(power.generated.yearly), colour="green", linetype = "dashed") +
+#  geom_text(aes(x=median(power.generated.yearly), label="median\n", y=0.05), colour="black", alpha=0.7, angle=90, text=element_text(size=11)) +
+#  xlab("2015 Average yearly power generation by district [kW]") +
+#  ylab("Estimated Density [-]") +
+#  scale_x_log10()
+#p.wpg.yearly
+#
+#is.numeric(power.generated.xts$DEB22)
 
 ### How does a typical WPG-kW time series look like?
-power.generated.daily.xts <- power.generated.xts %>%
+power.generated.daily.dt <- data.table(power.generated.xts) %>%
   mutate(day = as.Date(index(power.generated.xts), format = "%Y-%m-%d")) %>%
-  aggregate(~ day, , FUN = sum)
+  aggregate(. ~ day, data = ., FUN = sum)
+power.installed.daily.dt <- data.table(power.generated.xts) %>%
+  mutate(day = as.Date(index(power.generated.xts), format = "%Y-%m-%d")) %>%
+  aggregate(. ~ day, data = ., FUN = sum)
 
-p.wpg.kw.xts <- ggplot(data = data.frame(power.generated.xts[,'DEB22']), aes(x = index(power.generated.xts), y = power.generated.xts[,'DEB22'])) +
-                geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
-p.wpg.kw.xts
+p.wpg.daily.kw.xts <- ggplot(power.generated.daily.dt, aes(x =day, y =DEB22)) +
+                geom_line(color = "#dc724f", size = 0.5, alpha=1.0) +
+                xlab("Date") +
+                ylab("Daily Generation [kWh]") +
+                scale_y_log10() +
+                theme(axis.title.x = element_text(size = rel(0.75)),
+                      axis.title.y = element_text(size = rel(0.75)))
+# p.wpg.daily.kw.xts
 
-### How does a typical WPG-CF time series look like?
-p.wpg.cf.xts <- ggplot(data = capacity.factors, aes(x = index(capacity.factors), y = capacity.factors[,'DEA56'])) +
-                geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
+p.wpg.daily.kw.density <- ggplot(power.generated.daily.dt, aes(y=DEB22)) +
+                      geom_density() +
+                      geom_rug(alpha=0.3) +
+                      geom_hline(yintercept = median(power.generated.daily.dt$DEB22), color = "#dc724f", linetype = "dashed") +
+                      geom_text(aes(y=median(power.generated.daily.dt$DEB22), label="median\n", x=0.2), color = "#dc724f", alpha=0.7, angle=0, text=element_text(size=11)) +
+                      scale_y_log10() +
+                      xlab("Estimated Density") +
+                      theme(legend.position="none",
+                            axis.text.y=element_blank(),
+                            axis.ticks.y=element_blank(),
+                            axis.title.y=element_blank(),
+                            axis.title.x = element_text(size = rel(0.75))
+                      )
+# p.wpg.daily.kw.density
+p.wpg.daily.kw <- grid.arrange(p.wpg.daily.kw.xts, p.wpg.daily.kw.density, ncol=2, nrow=1, widths=c(5, 1))
+
+ggsave( paste( '../08_reporting/wpg-daily-typical-ts_', format(Sys.time(), "%Y%m%d_%H%M%S"), '.png', sep=''),
+  plot = p.wpg.daily.kw,
+  scale = golden_ratio,
+  width = 210/golden_ratio,
+  height = (210/golden_ratio)/(3*golden_ratio),
+  units = 'mm',
+  dpi = 300,
+  limitsize = TRUE,
+)
+
+
+#### How does a typical WPG-CF time series look like?
+#p.wpg.cf.xts <- ggplot(data = capacity.factors, aes(x = index(capacity.factors), y = capacity.factors[,'DEA56'])) +
+#                geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
 
 
 
@@ -50,6 +90,24 @@ p.wpg.cf.xts <- ggplot(data = capacity.factors, aes(x = index(capacity.factors),
 ### How dependent are the TS from different districs: TS correlation vs centroid distance
 #p <- ggplot(data=ts.pairs, aes(x=distances, y=spearman.corr)) +
 #  geom_point(alpha = 0.1) +
+
+#### How does a typical WPG-CF time series look like?
+#p.wpg.cf.xts <- ggplot(data = capacity.factors, aes(x = index(capacity.factors), y = capacity.factors[,'DEA56'])) +
+#                geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
+
+
+
+
+
+#plot_ly(x=ts.pairs$distances,
+#        y=ts.pairs$spearman.corr,
+#        color=ts.pairs$min.avg.cf,
+#        type = 'scatter',
+#        text = ts.pairs$pairs.id,
+#        alpha=0.2,)
+
+### What is a typical time series
+
 #  xlab("Euclidean Distance [km]") +
 #  ylab("Spearman Correlation [-]")
 #p
@@ -124,3 +182,4 @@ p.wpg.cf.xts <- ggplot(data = capacity.factors, aes(x = index(capacity.factors),
 #  dpi = 300,
 #  limitsize = TRUE,
 #)
+
