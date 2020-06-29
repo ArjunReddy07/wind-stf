@@ -263,6 +263,7 @@ ts.pairs <- data.table(pairs.id=district.pairs.id,
 power.generated.yearly <- apply(power.generated.xts, MARGIN = 2, sum)
 
 save(geodata,
+     turbines.centroids,
      district.pairs,
      ts.pairs,
      power.installed.xts,

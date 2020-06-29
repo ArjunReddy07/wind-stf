@@ -167,10 +167,10 @@ FilterOutDistantPairs <- function(ts.pairs){
   return(ts.pairs.near)
 }
 
-OrderPairByLatitude <- function(ts.pairs){
+OrderPairByLatitude <- function(ts.pairs, turbines.centroids){
   ts.pairs.out <- ts.pairs
   count = 0
-  if (geodata$de[ts.pairs$id1, lat] > geodata$de[ts.pairs$id2, lat]){
+  if (turbines.centroids[ts.pairs$id1, lat] > turbines.centroids[ts.pairs$id2, lat]){
     ts.pairs.out$id1 <- ts.pairs$id2
     ts.pairs.out$id2 <- ts.pairs$id1
     count <- count + 1
@@ -180,7 +180,7 @@ OrderPairByLatitude <- function(ts.pairs){
 }
 
 ts.pairs.near <- FilterOutDistantPairs(ts.pairs)
-ts.pairs.near.orderedSN <- OrderPairByLatitude(ts.pairs.near)
+ts.pairs.near.orderedSN <- OrderPairByLatitude(ts.pairs.near, turbines.centroids)
 
 GetCCF <- function(id1, id2){
   ccf.object <- ccf(rank(as.ts(capacity.factors[, id1])),
