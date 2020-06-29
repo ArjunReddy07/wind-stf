@@ -7,27 +7,32 @@ library(lubridate)
 library(dplyr)
 library(gridExtra)
 
-setwd("./data/08_reporting")
+# Ensure current working dir is data/08_reporting
+if(!dir.exists("./metadata")){
+  setwd("./data/08_reporting")
+}
+
 golden_ratio <- (1+sqrt(5))/2
 
 load("../02_intermediate/eda.vars.RData")
 
 ### What is a typical value for yearly WPG-kW? What districts present approx this value?
 # A: median = 79243199 [kW]; DEB22 79549998 [kW]
-# p.wpg.yearly <- ggplot(data.frame(val=power.generated.yearly), aes(x=val)) +
-#  geom_density() +
-#  geom_rug(alpha=0.5) +
-#  geom_vline(xintercept = median(power.generated.yearly), colour="green", linetype = "dashed") +
-#  geom_text(aes(x=median(power.generated.yearly), label="median\n", y=0.05), colour="black", alpha=0.7, angle=90, text=element_text(size=11)) +
-#  xlab("2015 Average yearly power generation by district [kW]") +
-#  ylab("Estimated Density [-]") +
-#  scale_x_log10()
-#p.wpg.yearly
-#
-#is.numeric(power.generated.xts$DEB22)
+#PlotYearlyWPGkWh <- function(){
+#   p.wpg.yearly <- ggplot(data.frame(val=power.generated.yearly), aes(x=val)) +
+#    geom_density() +
+#    geom_rug(alpha=0.5) +
+#    geom_vline(xintercept = median(power.generated.yearly), colour="green", linetype = "dashed") +
+#    geom_text(aes(x=median(power.generated.yearly), label="median\n", y=0.05), colour="black", alpha=0.7, angle=90, text=element_text(size=11)) +
+#    xlab("2015 Average yearly power generation by district [kW]") +
+#    ylab("Estimated Density [-]") +
+#    scale_x_log10()
+#  p.wpg.yearly
+#}
+#PlotYearlyWPGkWh()
 
-## How does a typical WPG-kW time series look like?
-PlotTypicalWPGkw <- function() {
+### How does a typical WPG-kWh time series look like?
+PlotTypicalWPGkwh <- function() {
   power.generated.daily.dt <- data.table(power.generated.xts) %>%
     mutate(day = as.Date(index(power.generated.xts), format = "%Y-%m-%d")) %>%
     aggregate(. ~ day, data = ., FUN = sum) %>%
@@ -86,7 +91,7 @@ PlotTypicalWPGkw <- function() {
     limitsize = TRUE,
   )
 }
-# PlotTypicalWPGkw()
+# PlotTypicalWPGkwh()
 
 ### How does a typical WPG-CF time series look like?
 PlotTypicalWPGcf <- function() {
@@ -138,38 +143,76 @@ PlotTypicalWPGcf <- function() {
 }
 # PlotTypicalWPGcf()
 
+### How are hourly, distrital time series temporarily correlated?
+# We use a pearson cross-correlation function to assess the temporal correlation between the hourly time series.
+# This requires the choice of a maximum lag.
+# Assuming a nearly critical condition in which an air mass travels in a straight line between the producing districts
+# most distant from one another (max(ts.pairs$distances)=800km) with an average streamline velocity the minimum
+# found across the land, assumed to be 7 km/h. We then use this modeled critical wind trajectory to
+# determine a reasonable upper bound for the maximum lag considered for evaluating the cross-correlation function: 800/7 ~= 114h.
+# Figure \ref{fig:single-pair-ccf} shows the cross-correlation for the most distant pair of producing districts.
+# Correlations tend to fall below ??? as the lag surpasses ??? hours.
+
+# Furthermore, in order to attain an informative overview of cross-correlations between districts time series,
+# we restrict ourselves to those pairs presenting no more than 400 km of Euclidean distance,
+# which tend to present spearman correlations of at least 0.5 (fig. \ref{fig:spatial-analysis).
+# This results in about 75% of all producing district pairs remaining for the temporal analysis.
+# When assessing the correlation coefficients at different lags, we define as a positive lag the condition
+# where the northernmost district in the pair is lagged in relation to the southernmost one in the pair.
+# This follows the consideration that, in Germany, wind flows from SSW (240°) tend to predominate both in
+# frequency and speed and, in consequence, also in power \cite{windatlas}.
+FilterOutDistantPairs <- function(ts.pairs){
+  ts.pairs.near <- ts.pairs[distances < 400E+3, ]
+  print(paste0(100*dim(ts.pairs.near)[1]/dim(ts.pairs)[1], '% of original pair entries remain.'))
+  return(ts.pairs.near)
+}
+
+OrderPairByLatitude <- function(ts.pairs){
+  ts.pairs.out <- ts.pairs
+  count = 0
+  if (geodata$de[ts.pairs$id1, lat] > geodata$de[ts.pairs$id2, lat]){
+    ts.pairs.out$id1 <- ts.pairs$id2
+    ts.pairs.out$id2 <- ts.pairs$id1
+    count <- count + 1
+  }
+  print(paste0(100*count/dim(ts.pairs)[1], '% of original pair entries remain.'))
+  return(ts.pairs.near)
+}
+
+ts.pairs.near <- FilterOutDistantPairs(ts.pairs)
+ts.pairs.near.orderedSN <- OrderPairByLatitude(ts.pairs.near)
+
+GetCCF <- function(id1, id2){
+  ccf.object <- ccf(rank(as.ts(capacity.factors[, id1])),
+                    rank(as.ts(capacity.factors[, id2])),
+                    lax.max = 120,
+                    plot = FALSE)
+  return(ccf.object$acf)
+}
 
 
-#plot_ly(x=ts.pairs$distances,
-#        y=ts.pairs$spearman.corr,
-#        color=ts.pairs$min.avg.cf,
-#        type = 'scatter',
-#        text = ts.pairs$pairs.id,
-#        alpha=0.2,)
-
-### What is a typical time series
+#a <- GetCCF('DEA1B', 'DEA44')
+#b <- GetCCF('DED43', 'DED43')
+#
+#ccf.object <- ccf(rank(as.ts(capacity.factors[, 'DED43'])),
+#                  rank(as.ts(capacity.factors[, 'DED53'])),
+#                  lag = 6,
+#                  plot = TRUE)
+#
+#plot(x=seq(-6,6), y=ccf.object$acf)
+#
+#ts.pairs$ccf =  mapply(ccf, capacity.factors, MoreArgs = list(lag.max = 72))
+#  ccf(rank(as.ts(capacity.factors[,'DEA56'])), rank(as.ts(capacity.factors[,'DEA59'])), lag.max = 72)
 
 ### How dependent are the TS from different districs: TS correlation vs centroid distance
-#p <- ggplot(data=ts.pairs, aes(x=distances, y=spearman.corr)) +
-#  geom_point(alpha = 0.1) +
-
-#### How does a typical WPG-CF time series look like?
-#p.wpg.cf.xts <- ggplot(data = capacity.factors, aes(x = index(capacity.factors), y = capacity.factors[,'DEA56'])) +
-#                geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
-
-
-
-
-
 #plot_ly(x=ts.pairs$distances,
 #        y=ts.pairs$spearman.corr,
 #        color=ts.pairs$min.avg.cf,
 #        type = 'scatter',
 #        text = ts.pairs$pairs.id,
 #        alpha=0.2,)
-
-### What is a typical time series
-
+#p <- ggplot(data=ts.pairs, aes(x=distances, y=spearman.corr)) +
+#  geom_point(alpha = 0.1) +
 #  xlab("Euclidean Distance [km]") +
 #  ylab("Spearman Correlation [-]")
 #p
@@ -197,51 +240,6 @@ PlotTypicalWPGcf <- function() {
 #  dpi = 300,
 #  limitsize = TRUE,
 #)
-
 # ggplotly(p)
 
-#plot_ly(x=ts.pairs$distances,
-#        y=ts.pairs$spearman.corr,
-#        color=ts.pairs$min.avg.cf,
-#        type = 'scatter',
-#        text = ts.pairs$pairs.id,
-#        alpha=0.2,)
-
-
- # plot cross-correlogram
-
-
-
-
-#GetCCF <- function(id1, id2){
-#  ccf.object <- ccf(rank(as.ts(capacity.factors[, id1])),
-#                    rank(as.ts(capacity.factors[, id2])),
-#                    lax.max = 72,
-#                    plot = FALSE)
-#  return(ccf.object$acf)
-#}
-#
-#a <- GetCCF('DEA1B', 'DEA44')
-#b <- GetCCF('DED43', 'DED43')
-#
-#ccf.object <- ccf(rank(as.ts(capacity.factors[, 'DED43'])),
-#                  rank(as.ts(capacity.factors[, 'DED53'])),
-#                  lag = 6,
-#                  plot = TRUE)
-#
-#plot(x=seq(-6,6), y=ccf.object$acf)
-
-#ts.pairs$ccf =  mapply(ccf, capacity.factors, MoreArgs = list(lag.max = 72))
-#  ccf(rank(as.ts(capacity.factors[,'DEA56'])), rank(as.ts(capacity.factors[,'DEA59'])), lag.max = 72)
-
-### Saving plots
-#ggsave( '../08_reporting/power-generated-yearly-distribution.png',
-#  plot = p.wpg.yearly,
-#  scale = golden_ratio,
-#  width = 210/golden_ratio,
-#  height = (210/golden_ratio)/golden_ratio,
-#  units = 'mm',
-#  dpi = 300,
-#  limitsize = TRUE,
-#)
 
