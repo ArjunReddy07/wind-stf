@@ -265,6 +265,7 @@ power.generated.yearly <- apply(power.generated.xts, MARGIN = 2, sum)
 save(geodata,
      district.pairs,
      ts.pairs,
+     power.installed.xts,
      power.generated.xts,
      capacity.factors,
      power.generated.yearly,
