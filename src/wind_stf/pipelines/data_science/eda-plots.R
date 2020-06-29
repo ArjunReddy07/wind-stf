@@ -26,114 +26,117 @@ load("../02_intermediate/eda.vars.RData")
 #
 #is.numeric(power.generated.xts$DEB22)
 
-### How does a typical WPG-kW time series look like?
-PlotTypicalWPGkw <- function(){
-power.generated.daily.dt <- data.table(power.generated.xts) %>%
-  mutate(day = as.Date(index(power.generated.xts), format = "%Y-%m-%d")) %>%
-  aggregate(. ~ day, data = ., FUN = sum) %>%
-  data.table(.)
+## How does a typical WPG-kW time series look like?
+PlotTypicalWPGkw <- function() {
+  power.generated.daily.dt <- data.table(power.generated.xts) %>%
+    mutate(day = as.Date(index(power.generated.xts), format = "%Y-%m-%d")) %>%
+    aggregate(. ~ day, data = ., FUN = sum) %>%
+    data.table(.)
 
-power.capacity.daily.dt <- data.table(power.installed.xts) %>%
-  mutate(day = as.Date(index(power.installed.xts), format = "%Y-%m-%d")) %>%
-  aggregate(. ~ day, data = ., FUN = sum) %>%
-  data.table(.)
+  power.capacity.daily.dt <- data.table(power.installed.xts) %>%
+    mutate(day = as.Date(index(power.installed.xts), format = "%Y-%m-%d")) %>%
+    aggregate(. ~ day, data = ., FUN = sum) %>%
+    data.table(.)
 
-setkey(power.generated.daily.dt, day)
-setkey(power.capacity.daily.dt, day)
-merged.deb22.dt <- power.generated.daily.dt[power.capacity.daily.dt, nomatch=0]
+  setkey(power.generated.daily.dt, day)
+  setkey(power.capacity.daily.dt, day)
+  merged.deb22.dt <- power.generated.daily.dt[power.capacity.daily.dt, nomatch = 0]
 
-p.wpg.daily.kwh.xts <- ggplot(power.generated.daily.dt, aes(x = day)) +
-  geom_line(aes(y=merged.deb22.dt$i.DEB22, color = 'capacity'), size = 0.4, alpha = 1.0) +
-  geom_line(aes(y=merged.deb22.dt$DEB22, color = 'generation'), size = 0.4, alpha = 1.0) +
-  scale_color_manual(name = NULL,
-                   values = c('capacity' = '#737373', 'generation' = '#F98C0AFF')) +
-  xlab("Date") +
-  ylab("Daily Generation [kWh]") +
-  scale_y_log10() +
-  theme(axis.title.x = element_text(size = rel(0.75)),
-        axis.title.y = element_text(size = rel(0.75)),
-        legend.position = c(0.90, 0.25),
-        legend.background = element_rect(fill=alpha('white', 1.0), color='transparent', size = 0.75),
-        legend.key = element_rect(fill = 'transparent', colour = 'transparent'))
+  p.wpg.daily.kwh.xts <- ggplot(power.generated.daily.dt, aes(x = day)) +
+    geom_line(aes(y = merged.deb22.dt$i.DEB22, color = 'capacity'), size = 0.4, alpha = 1.0) +
+    geom_line(aes(y = merged.deb22.dt$DEB22, color = 'generation'), size = 0.4, alpha = 1.0) +
+    scale_color_manual(name = NULL,
+                       values = c('capacity' = '#737373', 'generation' = '#F98C0AFF')) +
+    xlab("Date") +
+    ylab("Daily Generation [kWh]") +
+    scale_y_log10() +
+    theme(axis.title.x = element_text(size = rel(0.75)),
+          axis.title.y = element_text(size = rel(0.75)),
+          legend.position = c(0.90, 0.25),
+          legend.background = element_rect(fill = alpha('white', 0.0), color = 'transparent', size = 0.75),
+          legend.key = element_rect(fill = 'transparent', colour = 'transparent', size=0.5))
 
-p.wpg.daily.kwh.density <- ggplot(power.generated.daily.dt, aes(y = DEB22)) +
-  geom_density() +
-  geom_rug(alpha = 0.3) +
-  geom_hline(yintercept = median(power.generated.daily.dt$DEB22), color = "#dc724f", linetype = "dashed") +
-  geom_text(aes(y = median(power.generated.daily.dt$DEB22), label = "median\n", x = 0.2), color = "#dc724f", alpha = 0.7, angle = 0, text = element_text(size = 11)) +
-  scale_y_log10() +
-  xlab("Estimated Density") +
-  theme(legend.position = "none",
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        axis.title.x = element_text(size = rel(0.75))
+  p.wpg.daily.kwh.density <- ggplot(power.generated.daily.dt, aes(y = DEB22)) +
+    geom_density(aes(x =  ..scaled..)) +
+    geom_rug(alpha = 0.3) +
+    geom_hline(yintercept = median(power.generated.daily.dt$DEB22), color = "#F98C0AFF", alpha = 0.6) +
+    geom_text(aes(y = median(power.generated.daily.dt$DEB22), label = "median\n", x = 0.4), color = "#F98C0AFF", alpha = 0.7, angle = 0, text = element_text(size = rel(0.75))) +
+    scale_y_log10() +
+    xlab("Estimated Density") +
+    scale_x_continuous(breaks=c(0.0, 0.5, 1.0)) +
+    theme(legend.position = "none",
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.title.y = element_blank(),
+          axis.title.x = element_text(size = rel(0.75))
+    )
+  # p.wpg.daily.kwh.density
+  p.wpg.daily.kw <- grid.arrange(p.wpg.daily.kwh.xts, p.wpg.daily.kwh.density, ncol = 2, nrow = 1, widths = c(5, 1))
+
+  ggsave(
+    filename = paste0('../08_reporting/wpg-daily-typical-ts_',
+                      format(Sys.time(), "%Y%m%d_%H%M%S"),
+                      '.png'),
+    plot = p.wpg.daily.kw,
+    scale = golden_ratio,
+    width = 210 / golden_ratio,
+    height = (210 / golden_ratio) / (3 * golden_ratio),
+    units = 'mm',
+    dpi = 300,
+    limitsize = TRUE,
   )
-# p.wpg.daily.kwh.density
-p.wpg.daily.kw <- grid.arrange(p.wpg.daily.kwh.xts, p.wpg.daily.kwh.density, ncol=2, nrow=1, widths=c(5, 1))
-
-ggsave(
-  filename = paste0('../08_reporting/wpg-daily-typical-ts_',
-                    format(Sys.time(), "%Y%m%d_%H%M%S"),
-                    '.png'),
-  plot = p.wpg.daily.kw,
-  scale = golden_ratio,
-  width = 210/golden_ratio,
-  height = (210/golden_ratio)/(3*golden_ratio),
-  units = 'mm',
-  dpi = 300,
-  limitsize = TRUE,
-)
 }
+# PlotTypicalWPGkw()
 
-p.wpg.daily.kwh.xts <- ggplot(power.generated.daily.dt, aes(x = day)) +
-  geom_line(aes(y=merged.deb22.dt$i.DEB22, color = 'capacity'), size = 0.4, alpha = 1.0) +
-  geom_line(aes(y=merged.deb22.dt$DEB22, color = 'generation'), size = 0.4, alpha = 1.0) +
-  scale_color_manual(name = NULL,
-                   values = c('capacity' = '#737373', 'generation' = '#F98C0AFF')) +
-  xlab("Date") +
-  ylab("Daily Generation [kWh]") +
-  scale_y_log10() +
-  theme(axis.title.x = element_text(size = rel(0.75)),
-        axis.title.y = element_text(size = rel(0.75)),
-        legend.position = c(0.90, 0.25),
-        legend.background = element_rect(fill=alpha('white', 0.0), color='transparent', size = 0.75),
-        legend.key = element_rect(fill = 'transparent', colour = 'transparent'))
-p.wpg.daily.kwh.xts
+### How does a typical WPG-CF time series look like?
+PlotTypicalWPGcf <- function() {
+    capacity.factors.dt <- data.table(capacity.factors) %>%
+    mutate(day = as.Date(index(capacity.factors), format = "%Y-%m-%d")) %>%
+    aggregate(. ~ day, data = ., FUN = mean) %>%
+    data.table(.)
 
-p.wpg.daily.kwh.density <- ggplot(power.generated.daily.dt, aes(y = DEB22)) +
-  geom_density() +
-  geom_rug(alpha = 0.3) +
-  geom_hline(yintercept = median(power.generated.daily.dt$DEB22), color = "#dc724f", linetype = "dashed") +
-  geom_text(aes(y = median(power.generated.daily.dt$DEB22), label = "median\n", x = 0.2), color = "#dc724f", alpha = 0.7, angle = 0, text = element_text(size = 11)) +
-  scale_y_log10() +
-  xlab("Estimated Density") +
-  theme(legend.position = "none",
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        axis.title.x = element_text(size = rel(0.75))
+  p.wpg.daily.cf <- ggplot(capacity.factors.dt, aes(x = day)) +
+    geom_line(aes(y = capacity.factors.dt$DEB22), size = 0.4, color = '#F98C0AFF', alpha = 1.0) +
+    ylim(0.00, 1.00) +
+    xlab("Date") +
+    ylab("Daily Capacity Factor [-]") +
+    theme(axis.title.x = element_text(size = rel(0.75)),
+          axis.title.y = element_text(size = rel(0.75)),)
+
+   p.wpg.daily.cf.density <- ggplot(capacity.factors.dt, aes(y = DEB22)) +
+    geom_density(aes(x =  ..scaled..)) +
+    ylim(0.00, 1.00) +
+    geom_rug(alpha = 0.3) +
+    geom_hline(aes(yintercept = median(capacity.factors.dt$DEB22), color = "median"), alpha = 0.6) +
+    # geom_text(aes(y = median(capacity.factors.dt$DEB22), label = "median\n", x = 0.2), color = "#F98C0AFF", alpha = 0.7, angle = 0, hjust = 0, text = element_text(size = 9)) +
+    geom_hline(aes(yintercept = mean(capacity.factors.dt$DEB22), color = "mean"), alpha = 0.6) +
+    # geom_text(aes(y = mean(capacity.factors.dt$DEB22), label = "mean\n", x = 0.2), color = "#BB3754FF", alpha = 0.7, angle = 0, hjust = 0, text = element_text(size = 9)) +
+    scale_color_manual(name = NULL, values = c(median = "#F98C0AFF", mean = "#BB3754FF")) +
+    xlab("Estimated Density") +
+    scale_x_continuous(breaks=c(0.0, 0.5, 1.0)) +
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.title.y = element_blank(),
+          axis.title.x = element_text(size = rel(0.75)),
+          legend.position = c(0.6, 0.8),
+          legend.background = element_rect(fill = alpha('white', 0.0), color = 'transparent', size = 0.75),
+          legend.key = element_rect(fill = 'transparent', colour = 'transparent'))
+  p.wpg.daily.cf <- grid.arrange(p.wpg.daily.cf, p.wpg.daily.cf.density, ncol = 2, nrow = 1, widths = c(5, 1))
+
+  ggsave(
+    filename = paste0('../08_reporting/wpg-cf-daily-typical-ts_',
+                      format(Sys.time(), "%Y%m%d_%H%M%S"),
+                      '.png'),
+    plot = p.wpg.daily.cf,
+    scale = golden_ratio,
+    width = 210 / golden_ratio,
+    height = (210 / golden_ratio) / (3 * golden_ratio),
+    units = 'mm',
+    dpi = 300,
+    limitsize = TRUE,
   )
-# p.wpg.daily.kwh.density
-p.wpg.daily.kw <- grid.arrange(p.wpg.daily.kwh.xts, p.wpg.daily.kwh.density, ncol=2, nrow=1, widths=c(5, 1))
-
-ggsave(
-  filename = paste0('../08_reporting/wpg-daily-typical-ts_',
-                    format(Sys.time(), "%Y%m%d_%H%M%S"),
-                    '.png'),
-  plot = p.wpg.daily.kw,
-  scale = golden_ratio,
-  width = 210/golden_ratio,
-  height = (210/golden_ratio)/(3*golden_ratio),
-  units = 'mm',
-  dpi = 300,
-  limitsize = TRUE,
-)
-#### How does a typical WPG-CF time series look like?
-#p.wpg.cf.xts <- ggplot(data = capacity.factors, aes(x = index(capacity.factors), y = capacity.factors[,'DEA56'])) +
-#                geom_line(color = "#FC4E07", size = 0.5, alpha=0.3)
-
-
+}
+# PlotTypicalWPGcf()
 
 
 
