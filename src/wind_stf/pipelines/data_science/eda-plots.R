@@ -203,13 +203,25 @@ GetCCF <- function(id1, id2){
                     rank(as.ts(capacity.factors[, id2])),
                     lag.max = 72,
                     plot = FALSE)
-  return(ccf.object$acf)
+  return(data.table(ccf.object$acf))
 }
 
-ccf1 <- GetCCF(ts.pairs.near.orderedSN[1, 'id1'], ts.pairs.near.orderedSN[1, 'id2'])
-ccf2 <- GetCCF('DE145', 'DE114')
-ccf2 <- GetCCF('DE145', 'DEB22')
-ccf3 <- GetCCF('DE145', 'DE145')
+GetAllCCFs <- function(ts.pairs){
+  ccfs.DT <- mapply(FUN=GetCCF, ts.pairs$id1, ts.pairs$id2) %>%
+    do.call(rbind, .) %>%
+    t(.) %>%
+    data.table(.)
+  names(ccfs.DT) <- ts.pairs$pairs.id
+  return(ccfs.DT)
+}
+#ccf1 <- GetCCF(ts.pairs.near.orderedSN[1, 'id1'], ts.pairs.near.orderedSN[1, 'id2'])
+#ccf2 <- GetCCF('DE145', 'DE114')
+#ccf2 <- GetCCF('DE145', 'DEB22')
+#ccf3 <- GetCCF('DE145', 'DE145')
+
+ccfs.DT <- GetAllCCFs(head(ts.pairs.near.orderedSN))
+
+ggplot(data=ccfs.DT)
 
 #ccf.object <- ccf(rank(as.ts(capacity.factors[, 'DED43'])),
 #                  rank(as.ts(capacity.factors[, 'DED53'])),
