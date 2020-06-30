@@ -219,9 +219,57 @@ GetAllCCFs <- function(ts.pairs){
 #ccf2 <- GetCCF('DE145', 'DEB22')
 #ccf3 <- GetCCF('DE145', 'DE145')
 
-ccfs.DT <- GetAllCCFs(head(ts.pairs.near.orderedSN))
+#ccfs.DT <- GetAllCCFs(ts.pairs.near.orderedSN)
+#save(ccfs.DT,
+#     file = "../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
+load("../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
 
-ggplot(data=ccfs.DT)
+MinMaxNormalizeVector <- function(x){
+  x.normalized <- (x-min(x))/(max(x)-min(x))
+  return(as.vector(x.normalized))
+}
+distn <- data.table(
+  dist.normalized= MinMaxNormalizeVector(ts.pairs.near.orderedSN[, 'distances']),
+  pair.id = ts.pairs.near.orderedSN[, 'pairs.id'])
+
+GetNormalizedDistance <- function (.pairs.id){
+  return (distn[pair.id.pairs.id==.pairs.id, 'dist.normalized.distances'])
+}
+
+ccfs.DT$lag <- seq(-72, 72, 1)
+# ccfs.DT$dist.normalized <- MinMaxNormalizeVector(ts.pairs.near.orderedSN[, 'distances'])
+
+ccfs.long.DT <- melt(ccfs.DT, id="lag")  # convert to long format
+ccfs.mini.long.DT <- ccfs.long.DT[1:(145*60),]
+# ccfs.mini.long.DT <- melt(data=ccfs.DT, id.vars=c("lag", 'dist.normalized'), vars=c("DE145-DE114", "DE145-DE146", "DE145-DE132", "DE145-DE12A", "DE145-DE133"))  # convert to long format
+# ccfs.mini.long.DT$dist.normalized <- MinMaxNormalizeVector(ts.pairs.near.orderedSN[, 'distances'])
+
+lines.qty <- dim(ccfs.long.DT)[1]/145
+p.ccfs <- ggplot(data=ccfs.long.DT,
+       aes(x=lag, y=value, color=variable)) +
+    geom_line(show.legend = FALSE, alpha=0.001) +
+    xlab("Lag [h]") +
+    ylab("Pearson CCF [-]") +
+    scale_x_continuous(breaks = c(-72, -48, - 24, 0, 24, 48, 72)) +
+    scale_color_manual(values=rep('#F98C0AFF', lines.qty))
+p.ccfs
+
+ggsave(
+  filename = paste0('../08_reporting/ccf-all_',
+                  format(Sys.time(), "%Y%m%d_%H%M%S"),
+                  '.png'),
+  plot = p.ccfs,
+  scale = golden_ratio,
+  width = 210/golden_ratio,
+  height = (210/golden_ratio)/golden_ratio,
+  units = 'mm',
+  dpi = 300,
+  limitsize = TRUE,
+)
+
+# ggplotly(p)
+
+#ggplot(data=ccfs.DT)
 
 #ccf.object <- ccf(rank(as.ts(capacity.factors[, 'DED43'])),
 #                  rank(as.ts(capacity.factors[, 'DED53'])),
