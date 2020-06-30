@@ -193,6 +193,19 @@ GetTurbinesCentroids <- function(){
   return(turbines.centroids)
 }
 
+GetTurbinesCentroidsDT <- function(){
+  turbines.metadata.st <- read.csv("metadata/wind_turbine_data.csv", sep=";")
+  turbines.metadata.st  <- turbines.metadata.st[ !(turbines.metadata.st$NUTS_ID %in% districts.blacklist), ]
+
+  turbines.metadata.st$dt <- as.Date.character(turbines.metadata.st$dt, tryFormats = c("%d.%m.%Y"))  # commissioning date column to standard datetime format
+  turbines.metadata.st <- turbines.metadata.st[which(turbines.metadata.st$dt < "2015-12-31"),]
+  turbines.centroids <- aggregate(. ~ NUTS_ID, data= turbines.metadata.st[,c("lat", "lon", "NUTS_ID")], mean)
+  rownames(turbines.centroids) <- turbines.centroids$NUTS_ID
+  turbines.centroids.dt <- turbines.centroids[ names(capacity.factors), ] %>% # order centroids table the same way as capacity.factors, and corr.cf tables
+              data.table(.)
+  return(turbines.centroids.dt)
+}
+
 GetTurbinesCentroidsDistances <- function(turbines.centroids){
   distances.centroids <- st_distance(turbines.centroids)
   rownames(distances.centroids) <- turbines.centroids$NUTS_ID
@@ -262,8 +275,11 @@ ts.pairs <- data.table(pairs.id=district.pairs.id,
 
 power.generated.yearly <- apply(power.generated.xts, MARGIN = 2, sum)
 
+
+turbines.centroids.dt <- GetTurbinesCentroidsDT()
+
 save(geodata,
-     turbines.centroids,
+     turbines.centroids.dt,
      district.pairs,
      ts.pairs,
      power.installed.xts,

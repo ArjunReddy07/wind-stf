@@ -8,9 +8,13 @@ library(dplyr)
 library(gridExtra)
 
 # Ensure current working dir is data/08_reporting
-if(!dir.exists("./metadata")){
+tryCatch(
+  {
   setwd("./data/08_reporting")
-}
+  },
+  error = function( err ){
+    print("Already in the expected working dir. :)")}
+)
 
 golden_ratio <- (1+sqrt(5))/2
 
@@ -161,39 +165,52 @@ PlotTypicalWPGcf <- function() {
 # where the northernmost district in the pair is lagged in relation to the southernmost one in the pair.
 # This follows the consideration that, in Germany, wind flows from SSW (240°) tend to predominate both in
 # frequency and speed and, in consequence, also in power \cite{windatlas}.
-FilterOutDistantPairs <- function(ts.pairs){
-  ts.pairs.near <- ts.pairs[distances < 400E+3, ]
-  print(paste0(100*dim(ts.pairs.near)[1]/dim(ts.pairs)[1], '% of original pair entries remain.'))
-  return(ts.pairs.near)
-}
-
-OrderPairByLatitude <- function(ts.pairs, turbines.centroids){
-  ts.pairs.out <- ts.pairs
-  count = 0
-  if (turbines.centroids[ts.pairs$id1, lat] > turbines.centroids[ts.pairs$id2, lat]){
-    ts.pairs.out$id1 <- ts.pairs$id2
-    ts.pairs.out$id2 <- ts.pairs$id1
-    count <- count + 1
-  }
-  print(paste0(100*count/dim(ts.pairs)[1], '% of original pair entries remain.'))
-  return(ts.pairs.near)
-}
-
-ts.pairs.near <- FilterOutDistantPairs(ts.pairs)
-ts.pairs.near.orderedSN <- OrderPairByLatitude(ts.pairs.near, turbines.centroids)
+#FilterOutDistantPairs <- function(ts.pairs){
+#  ts.pairs.near <- ts.pairs[distances < 400E+3, ]
+#  print(paste0(100*dim(ts.pairs.near)[1]/dim(ts.pairs)[1], '% of original pair entries remain.'))
+#  return(ts.pairs.near)
+#}
+#
+#OrderPairByLatitude <- function(ids_pair){
+#  id1 <- ids_pair[1]
+#  id2 <- ids_pair[2]
+#
+#  # has.switched <- FALSE
+#  ordered.id_pair <- c(id1, id2)
+#  if (turbines.centroids.dt[NUTS_ID==id1, lat] > turbines.centroids.dt[NUTS_ID==id2, lat]){
+#     ordered.id_pair <- c(id2, id1)
+#  }
+#  return(ordered.id_pair)
+#}
+#
+#OrderAllPairsByLatitude <- function(ts.pairs){
+#  ordered.id_pairs <- apply(ts.pairs[, c('id1', 'id2')], MARGIN=1, FUN=OrderPairByLatitude)
+#  ts.pairs.ordered <- ts.pairs
+#  ts.pairs.ordered$id1 <- ordered.id_pairs[1, ]
+#  ts.pairs.ordered$id2 <- ordered.id_pairs[2, ]
+#  return(ts.pairs.ordered)
+#}
+#
+#ts.pairs.near <- FilterOutDistantPairs(ts.pairs)
+#ts.pairs.near.orderedSN <- OrderAllPairsByLatitude(ts.pairs.near)
+#
+#save(ts.pairs.near.orderedSN,
+#     file = "../02_intermediate/ts.pairs.near.orderedSN.RData")
+load("../02_intermediate/ts.pairs.near.orderedSN.RData")
 
 GetCCF <- function(id1, id2){
   ccf.object <- ccf(rank(as.ts(capacity.factors[, id1])),
                     rank(as.ts(capacity.factors[, id2])),
-                    lax.max = 120,
+                    lag.max = 72,
                     plot = FALSE)
   return(ccf.object$acf)
 }
 
+ccf1 <- GetCCF(ts.pairs.near.orderedSN[1, 'id1'], ts.pairs.near.orderedSN[1, 'id2'])
+ccf2 <- GetCCF('DE145', 'DE114')
+ccf2 <- GetCCF('DE145', 'DEB22')
+ccf3 <- GetCCF('DE145', 'DE145')
 
-#a <- GetCCF('DEA1B', 'DEA44')
-#b <- GetCCF('DED43', 'DED43')
-#
 #ccf.object <- ccf(rank(as.ts(capacity.factors[, 'DED43'])),
 #                  rank(as.ts(capacity.factors[, 'DED53'])),
 #                  lag = 6,
