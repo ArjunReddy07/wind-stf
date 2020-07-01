@@ -211,7 +211,7 @@ GetTurbinesCentroidsDistances <- function(turbines.centroids){
   distances.centroids <- st_distance(turbines.centroids)
   rownames(distances.centroids) <- turbines.centroids$NUTS_ID
   colnames(distances.centroids) <- turbines.centroids$NUTS_ID
-  return(distances.centroids)
+  return(distances.centroids * 1E-03 )
 }
 
 # EDA  ===========================================

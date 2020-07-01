@@ -44,25 +44,27 @@ GetDeltaInstalledPower <- function (.nuts.id){
   return(capacity.DT[nuts.id==.nuts.id, 'delta'])
 }
 
+capacity.DT <- GetChangeInInstalledPower()
+
 PlotDensityYearlyWPGkWh <- function(.nuts_id, .power.installed.xts=power.installed.xts){
   power.generated.yearly.DT <- data.table(
     wpg.yearly = power.generated.yearly,
     nuts.id = names(power.generated.yearly),
     total.commissionings = sapply(names(power.generated.yearly), FUN=GetTotalCommissionings),
-    capacity.delta = lapply(names(power.generated.yearly), FUN=GetDeltaInstalledPower)
+    # capacity.delta = sapply(names(power.generated.yearly), FUN=GetDeltaInstalledPower)
   )
-  power.generated.yearly.DT[capacity.delta==Inf]
 
+  power.generated.yearly.DT[, 'capacity.delta'] = as.numeric ( sapply(names(power.generated.yearly), FUN=GetDeltaInstalledPower) )
    p.wpg.yearly <- ggplot(data=power.generated.yearly.DT, aes(x=wpg.yearly)) +
     geom_density() +
-    geom_rug(alpha=0.8, aes(color=capacity.delta)) +
+    geom_rug(alpha=0.8, aes(color=capacity.delta), show.legend = TRUE) +
     #geom_vline(xintercept = median(p.wpg.yearly), colour="green", linetype = "dashed") +
     #geom_text(aes(x=median(p.wpg.yearly), label="median\n", y=0.05), colour="black", alpha=0.7, angle=90, text=element_text(size=11)) +
     #xlab("2015 Average yearly power generation by district [kW]") +
     #ylab("Estimated Density [-]") +
     scale_x_log10()
 
-  ggplotly(p.wpg.yearly, tooltip = c('capacity.delta', 'nuts.id'))
+  ggplotly(p.wpg.yearly, text = c('nuts.id', 'capacity.delta'))
 
 
   if (!plotly){
@@ -76,17 +78,16 @@ PlotDensityYearlyWPGkWh <- function(.nuts_id, .power.installed.xts=power.install
         alpha=0.2,)
   }
 }
-
-PlotDensityYearlyWPGkWh(plotly=TRUE)
+# PlotDensityYearlyWPGkWh()
 
 ### How does a typical WPG-kWh time series look like?
 PlotTypicalWPGkwh <- function() {
-  power.generated.daily.dt <- data.table(power.generated.xts) %>%
+  power.generated.daily.dt <- data.table(power.generated.xts * 1E-06) %>%
     mutate(day = as.Date(index(power.generated.xts), format = "%Y-%m-%d")) %>%
     aggregate(. ~ day, data = ., FUN = sum) %>%
     data.table(.)
 
-  power.capacity.daily.dt <- data.table(power.installed.xts) %>%
+  power.capacity.daily.dt <- data.table(power.installed.xts * 1E-06) %>%
     mutate(day = as.Date(index(power.installed.xts), format = "%Y-%m-%d")) %>%
     aggregate(. ~ day, data = ., FUN = sum) %>%
     data.table(.)
@@ -96,26 +97,29 @@ PlotTypicalWPGkwh <- function() {
   merged.deb22.dt <- power.generated.daily.dt[power.capacity.daily.dt, nomatch = 0]
 
   p.wpg.daily.kwh.xts <- ggplot(power.generated.daily.dt, aes(x = day)) +
-    geom_line(aes(y = merged.deb22.dt$i.DEB22, color = 'capacity'), size = 0.4, alpha = 1.0) +
-    geom_line(aes(y = merged.deb22.dt$DEB22, color = 'generation'), size = 0.4, alpha = 1.0) +
+    geom_line(aes(y = merged.deb22.dt$i.DE71D, color = 'capacity'), size = 0.4, alpha = 1.0) +
+    geom_line(aes(y = merged.deb22.dt$DE71D, color = 'generation'), size = 0.4, alpha = 1.0) +
     scale_color_manual(name = NULL,
                        values = c('capacity' = '#737373', 'generation' = '#F98C0AFF')) +
     xlab("Date") +
-    ylab("Daily Generation [kWh]") +
-    scale_y_log10() +
+    ylab("Daily Generation [GWh]") +
+    # scale_y_continuous(name, breaks, labels, limits, trans)
+    scale_y_continuous(breaks = c(0, 0.4, 0.8, 1.2), labels = c(0, 0.4, 0.8, 1.2), limits=c(0, 1.3)) +
+    # scale_y_log10() +
     theme(axis.title.x = element_text(size = rel(0.75)),
           axis.title.y = element_text(size = rel(0.75)),
-          legend.position = c(0.90, 0.25),
-          legend.background = element_rect(fill = alpha('white', 0.0), color = 'transparent', size = 0.75),
-          legend.key = element_rect(fill = 'transparent', colour = 'transparent', size=0.5))
+          legend.position = c(0.10, 0.80),
+          legend.background = element_rect(fill = alpha('white', 0.0), color = 'transparent', size = 0.75))#,
+          #legend.key = element_rect(fill = 'white', colour = 'white', size=0.5))
 
-  p.wpg.daily.kwh.density <- ggplot(power.generated.daily.dt, aes(y = DEB22)) +
+  p.wpg.daily.kwh.density <- ggplot(power.generated.daily.dt, aes(y = DE71D)) +
     geom_density(aes(x =  ..scaled..)) +
     geom_rug(alpha = 0.3) +
-    geom_hline(yintercept = median(power.generated.daily.dt$DEB22), color = "#F98C0AFF", alpha = 0.6) +
-    geom_text(aes(y = median(power.generated.daily.dt$DEB22), label = "median\n", x = 0.4), color = "#F98C0AFF", alpha = 0.7, angle = 0, text = element_text(size = rel(0.75))) +
-    scale_y_log10() +
+    geom_hline(yintercept = median(power.generated.daily.dt$DE71D), color = "#F98C0AFF", alpha = 0.6) +
+    geom_text(aes(y = median(power.generated.daily.dt$DE71D), label = "median\n", x = 0.25), color = "#F98C0AFF", alpha = 0.7, angle = 0, text = element_text(size = rel(0.75))) +
+    # scale_y_log10() +
     xlab("Estimated Density") +
+    scale_y_continuous(breaks = c(0, 0.4, 0.8, 1.2), labels = c(0, 0.4, 0.8, 1.2), limits=c(0, 1.3)) +
     scale_x_continuous(breaks=c(0.0, 0.5, 1.0)) +
     theme(legend.position = "none",
           axis.text.y = element_blank(),
@@ -141,27 +145,27 @@ PlotTypicalWPGkwh <- function() {
 # PlotTypicalWPGkwh()
 
 ### How does a typical WPG-CF time series look like?
-PlotTypicalWPGcf <- function(district.id='DEB22') {
+PlotTypicalWPGcf <- function() {
     capacity.factors.dt <- data.table(capacity.factors) %>%
     mutate(day = as.Date(index(capacity.factors), format = "%Y-%m-%d")) %>%
     aggregate(. ~ day, data = ., FUN = mean) %>%
     data.table(.)
 
   p.wpg.daily.cf <- ggplot(capacity.factors.dt, aes(x = day)) +
-    geom_line(aes(y = capacity.factors.dt$DEB22), size = 0.4, color = '#F98C0AFF', alpha = 1.0) +
+    geom_line(aes(y = capacity.factors.dt$DE71D), size = 0.4, color = '#F98C0AFF', alpha = 1.0) +
     ylim(0.00, 1.00) +
     xlab("Date") +
     ylab("Daily Capacity Factor [-]") +
     theme(axis.title.x = element_text(size = rel(0.75)),
           axis.title.y = element_text(size = rel(0.75)),)
 
-   p.wpg.daily.cf.density <- ggplot(capacity.factors.dt, aes(y = DEB22)) +
+   p.wpg.daily.cf.density <- ggplot(capacity.factors.dt, aes(y = DE71D)) +
     geom_density(aes(x =  ..scaled..)) +
     ylim(0.00, 1.00) +
     geom_rug(alpha = 0.3) +
-    geom_hline(aes(yintercept = median(capacity.factors.dt[district.id]), color = "median"), alpha = 0.6) +
+    # geom_hline(aes(yintercept = median( as.numeric( capacity.factors.dt[, 'DE71D']) ), color = "median"), alpha = 0.6) +
     # geom_text(aes(y = median(capacity.factors.dt$DEB22), label = "median\n", x = 0.2), color = "#F98C0AFF", alpha = 0.7, angle = 0, hjust = 0, text = element_text(size = 9)) +
-    geom_hline(aes(yintercept = mean(capacity.factors.dt[district.id]), color = "mean"), alpha = 0.6) +
+    #geom_hline(aes(yintercept = mean( as.numeric( capacity.factors.dt[, 'DE71D'] ) ), color = "mean"), alpha = 0.6) +
     # geom_text(aes(y = mean(capacity.factors.dt$DEB22), label = "mean\n", x = 0.2), color = "#BB3754FF", alpha = 0.7, angle = 0, hjust = 0, text = element_text(size = 9)) +
     scale_color_manual(name = NULL, values = c(median = "#F98C0AFF", mean = "#BB3754FF")) +
     xlab("Estimated Density") +
@@ -189,6 +193,47 @@ PlotTypicalWPGcf <- function(district.id='DEB22') {
   )
 }
 # PlotTypicalWPGcf()
+
+### How do ALL WPG-CF time series look like?
+PlotAllWpgCf <- function() {
+  capacity.factors.DT <- data.table(capacity.factors) %>%
+    mutate(day = as.Date(index(capacity.factors), format = "%Y-%m-%d")) %>%
+    aggregate(. ~ day, data = ., FUN = mean) %>%
+    data.table(.)
+
+  capacity.factors.DT.long <- melt(capacity.factors.DT, id = "day")  # convert to long format
+  lines.qty <- dim(capacity.factors.DT)[2] -1
+
+  curves.colors <- rep('#848c86', lines.qty)
+  curves.colors[122] <- '#F98C0AFF'  # highlight DE71D
+
+  curves.alphas<- rep(0.01, lines.qty)
+  curves.alphas[122] <- 1.0  # highlight DE71D
+
+  p.wpg.daily.cf.all <- ggplot(data=capacity.factors.DT.long, aes(x=day, y=value, color=variable, alpha=variable)) +
+    geom_line(show.legend = FALSE) +
+    xlab("Date") +
+    ylab("Daily Capacity Factor [-]") +
+    ylim(0.00, 1.00) +
+    scale_color_manual(values=curves.colors) +
+    scale_alpha_manual(values=curves.alphas) +
+    theme(axis.title.x = element_text(size = rel(0.75)),
+          axis.title.y = element_text(size = rel(0.75)),)
+
+  ggsave(
+    filename = paste0('../08_reporting/wpg-cf-daily-all-ts_',
+                      format(Sys.time(), "%Y%m%d_%H%M%S"),
+                      '.png'),
+    plot = p.wpg.daily.cf.all,
+    scale = golden_ratio,
+    width = 210 / golden_ratio,
+    height = (210 / golden_ratio) / (3 * golden_ratio),
+    units = 'mm',
+    dpi = 300,
+    limitsize = TRUE,
+  )
+}
+# PlotAllWpgCf()
 
 ### How are hourly, distrital time series temporarily correlated?
 # We use a pearson cross-correlation function to assess the temporal correlation between the hourly time series.
@@ -347,12 +392,12 @@ GetNormalizedDistance <- function (.pairs.id){
 
 ### How dependent are the TS from different districs: correlation btw. pair of TS vs centroid distance
 PlotCorrelationsVsDistances <- function (){
-  plot_ly(x=ts.pairs$distances,
-          y=ts.pairs$spearman.corr,
-          color=ts.pairs$min.avg.cf,
-          type = 'scatter',
-          text = ts.pairs$pairs.id,
-          alpha=0.2,)
+  #plot_ly(x=ts.pairs$distances,
+  #        y=ts.pairs$spearman.corr,
+  #        color=ts.pairs$min.avg.cf,
+  #        type = 'scatter',
+  #        text = ts.pairs$pairs.id,
+  #        alpha=0.2,)
   p <- ggplot(data=ts.pairs, aes(x=distances, y=spearman.corr)) +
     geom_point(alpha = 0.1) +
     xlab("Euclidean Distance [km]") +
@@ -384,4 +429,4 @@ PlotCorrelationsVsDistances <- function (){
   )
    # ggplotly(p)
 }
-
+PlotCorrelationsVsDistances()
