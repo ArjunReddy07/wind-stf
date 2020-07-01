@@ -96,7 +96,8 @@ GetPowerGeneratedTS <- function(){
 }
 
 # Preprocessing  ===========================================
-districts.blacklist <- c('DE409', 'DE40C', 'DE403')  # districts TS which represent outliers in correlogram
+districts.blacklist <- c(c('DE409', 'DE40C', 'DE403'), # districts TS which represent outliers in correlogram
+                         c('DE24C', 'DE266', 'DEA2C')) # districts with zero installed capacity at 2015-01-01
 turbines.metadata <- turbines.metadata[ !( turbines.metadata$NUTS_ID %in% districts.blacklist), ]
 turbines.metadata.st <- turbines.metadata.st[ !( turbines.metadata.st$NUTS_ID %in% districts.blacklist), ]
 

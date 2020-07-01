@@ -22,18 +22,62 @@ load("../02_intermediate/eda.vars.RData")
 
 ### What is a typical value for yearly WPG-kW? What districts present approx this value?
 # A: median = 79243199 [kW]; DEB22 79549998 [kW]
-PlotYearlyWPGkWh <- function(){
-   p.wpg.yearly <- ggplot(data.frame(val=power.generated.yearly), aes(x=val)) +
-    geom_density() +
-    geom_rug(alpha=0.5) +
-    geom_vline(xintercept = median(power.generated.yearly), colour="green", linetype = "dashed") +
-    geom_text(aes(x=median(power.generated.yearly), label="median\n", y=0.05), colour="black", alpha=0.7, angle=90, text=element_text(size=11)) +
-    xlab("2015 Average yearly power generation by district [kW]") +
-    ylab("Estimated Density [-]") +
-    scale_x_log10()
-  p.wpg.yearly
+GetTotalCommissionings <- function(.nuts_id, .power.installed.xts=power.installed.xts){
+  return( length( unique(.power.installed.xts[, .nuts_id]) ) )
 }
-#PlotYearlyWPGkWh()
+
+GetChangeInInstalledPower <- function(){
+  capacity.initial <- data.table( power.installed.xts[start(power.installed.xts),] )
+  capacity.end <- power.installed.xts[end(power.installed.xts),]
+
+  capacity.DT <- data.table(
+    nuts.id = names(capacity.initial),
+    capacity.initial = as.numeric(capacity.initial),
+    capacity.end = as.numeric(capacity.end)
+  )
+
+  capacity.DT[, 'delta'] <- 100 * ( capacity.DT[, 'capacity.end'] - capacity.DT[, 'capacity.initial'] ) / capacity.DT[, 'capacity.initial']
+  return(capacity.DT)
+}
+
+GetDeltaInstalledPower <- function (.nuts.id){
+  return(capacity.DT[nuts.id==.nuts.id, 'delta'])
+}
+
+PlotDensityYearlyWPGkWh <- function(.nuts_id, .power.installed.xts=power.installed.xts){
+  power.generated.yearly.DT <- data.table(
+    wpg.yearly = power.generated.yearly,
+    nuts.id = names(power.generated.yearly),
+    total.commissionings = sapply(names(power.generated.yearly), FUN=GetTotalCommissionings),
+    capacity.delta = lapply(names(power.generated.yearly), FUN=GetDeltaInstalledPower)
+  )
+  power.generated.yearly.DT[capacity.delta==Inf]
+
+   p.wpg.yearly <- ggplot(data=power.generated.yearly.DT, aes(x=wpg.yearly)) +
+    geom_density() +
+    geom_rug(alpha=0.8, aes(color=capacity.delta)) +
+    #geom_vline(xintercept = median(p.wpg.yearly), colour="green", linetype = "dashed") +
+    #geom_text(aes(x=median(p.wpg.yearly), label="median\n", y=0.05), colour="black", alpha=0.7, angle=90, text=element_text(size=11)) +
+    #xlab("2015 Average yearly power generation by district [kW]") +
+    #ylab("Estimated Density [-]") +
+    scale_x_log10()
+
+  ggplotly(p.wpg.yearly, tooltip = c('capacity.delta', 'nuts.id'))
+
+
+  if (!plotly){
+    p.wpg.yearly
+  }
+  else {
+      plot_ly(data.table(val=power.generated.yearly),
+        # color=ts.pairs$min.avg.cf,
+        type = 'density',
+        text = index,
+        alpha=0.2,)
+  }
+}
+
+PlotDensityYearlyWPGkWh(plotly=TRUE)
 
 ### How does a typical WPG-kWh time series look like?
 PlotTypicalWPGkwh <- function() {
@@ -97,7 +141,7 @@ PlotTypicalWPGkwh <- function() {
 # PlotTypicalWPGkwh()
 
 ### How does a typical WPG-CF time series look like?
-PlotTypicalWPGcf <- function() {
+PlotTypicalWPGcf <- function(district.id='DEB22') {
     capacity.factors.dt <- data.table(capacity.factors) %>%
     mutate(day = as.Date(index(capacity.factors), format = "%Y-%m-%d")) %>%
     aggregate(. ~ day, data = ., FUN = mean) %>%
@@ -115,9 +159,9 @@ PlotTypicalWPGcf <- function() {
     geom_density(aes(x =  ..scaled..)) +
     ylim(0.00, 1.00) +
     geom_rug(alpha = 0.3) +
-    geom_hline(aes(yintercept = median(capacity.factors.dt$DEB22), color = "median"), alpha = 0.6) +
+    geom_hline(aes(yintercept = median(capacity.factors.dt[district.id]), color = "median"), alpha = 0.6) +
     # geom_text(aes(y = median(capacity.factors.dt$DEB22), label = "median\n", x = 0.2), color = "#F98C0AFF", alpha = 0.7, angle = 0, hjust = 0, text = element_text(size = 9)) +
-    geom_hline(aes(yintercept = mean(capacity.factors.dt$DEB22), color = "mean"), alpha = 0.6) +
+    geom_hline(aes(yintercept = mean(capacity.factors.dt[district.id]), color = "mean"), alpha = 0.6) +
     # geom_text(aes(y = mean(capacity.factors.dt$DEB22), label = "mean\n", x = 0.2), color = "#BB3754FF", alpha = 0.7, angle = 0, hjust = 0, text = element_text(size = 9)) +
     scale_color_manual(name = NULL, values = c(median = "#F98C0AFF", mean = "#BB3754FF")) +
     xlab("Estimated Density") +
@@ -164,6 +208,87 @@ PlotTypicalWPGcf <- function() {
 # where the northernmost district in the pair is lagged in relation to the southernmost one in the pair.
 # This follows the consideration that, in Germany, wind flows from SSW (240°) tend to predominate both in
 # frequency and speed and, in consequence, also in power \cite{windatlas}.
+
+PlotAllCorrelogramsSuperposed <- function(){
+  #ts.pairs.near <- FilterOutDistantPairs(ts.pairs)
+  #ts.pairs.near.orderedSN <- OrderAllPairsByLatitude(ts.pairs.near)
+
+  #save(ts.pairs.near.orderedSN,
+  #     file = "../02_intermediate/ts.pairs.near.orderedSN.RData")
+  load("../02_intermediate/ts.pairs.near.orderedSN.RData")
+
+  #ccfs.DT <- GetAllCCFs(ts.pairs.near.orderedSN)
+  #save(ccfs.DT,
+  #     file = "../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
+  load("../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
+
+
+  ccfs.DT$lag <- seq(-72, 72, 1)
+  # ccfs.DT$dist.normalized <- MinMaxNormalizeVector(ts.pairs.near.orderedSN[, 'distances'])
+
+  ccfs.long.DT <- melt(ccfs.DT, id = "lag")  # convert to long format
+  ccfs.mini.long.DT <- ccfs.long.DT[1:(145 * 60),]
+  # ccfs.mini.long.DT <- melt(data=ccfs.DT, id.vars=c("lag", 'dist.normalized'), vars=c("DE145-DE114", "DE145-DE146", "DE145-DE132", "DE145-DE12A", "DE145-DE133"))  # convert to long format
+  # ccfs.mini.long.DT$dist.normalized <- MinMaxNormalizeVector(ts.pairs.near.orderedSN[, 'distances'])
+
+  lines.qty <- dim(ccfs.long.DT)[1] / 145
+  #p.ccfs <- ggplot(data=ccfs.long.DT,
+  #       aes(x=lag, y=value, color=variable)) +
+  #    geom_line(show.legend = FALSE, alpha=0.001) +
+  #    xlab("Lag [h]") +
+  #    ylab("Pearson CCF [-]") +
+  #    scale_x_continuous(breaks = c(-72, -48, - 24, 0, 24, 48, 72)) +
+  #    scale_color_manual(values=rep('#F98C0AFF', lines.qty))
+  #p.ccfs
+  #
+  #ggsave(
+  #  filename = paste0('../08_reporting/ccf-all_',
+  #                  format(Sys.time(), "%Y%m%d_%H%M%S"),
+  #                  '.png'),
+  #  plot = p.ccfs,
+  #  scale = golden_ratio,
+  #  width = 210/golden_ratio,
+  #  height = (210/golden_ratio)/golden_ratio,
+  #  units = 'mm',
+  #  dpi = 300,
+  #  limitsize = TRUE,
+  #)
+
+  p.ccf.sample <- ggplot(data = ccfs.long.DT[variable == 'DE145-DEB22']) +
+    geom_segment(aes(xend = lag, x = lag, yend = 0, y = value), show.legend = FALSE, alpha = 1, color = '#F98C0AFF') +
+    xlab("Lag [h]") +
+    ylab("Pearson CCF [-]") +
+    scale_x_continuous(breaks = c(-72, -48, -24, 0, 24, 48, 72)) +
+    scale_y_continuous(breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)) +
+    ylim(0, 1)
+  p.ccf.sample
+
+  ggsave(
+    filename = paste0('../08_reporting/ccf-sample_',
+                      format(Sys.time(), "%Y%m%d_%H%M%S"),
+                      '.png'),
+    plot = p.ccf.sample,
+    scale = golden_ratio,
+    width = 210 / golden_ratio,
+    height = (210 / golden_ratio) / golden_ratio,
+    units = 'mm',
+    dpi = 300,
+    limitsize = TRUE,
+  )
+
+  #ggplot(data=ccfs.DT)
+
+  #ccf.object <- ccf(rank(as.ts(capacity.factors[, 'DED43'])),
+  #                  rank(as.ts(capacity.factors[, 'DED53'])),
+  #                  lag = 6,
+  #                  plot = TRUE)
+  #
+  #plot(x=seq(-6,6), y=ccf.object$acf)
+  #
+  #ts.pairs$ccf =  mapply(ccf, capacity.factors, MoreArgs = list(lag.max = 72))
+  #  ccf(rank(as.ts(capacity.factors[,'DEA56'])), rank(as.ts(capacity.factors[,'DEA59'])), lag.max = 72)
+}
+
 FilterOutDistantPairs <- function(ts.pairs){
   ts.pairs.near <- ts.pairs[distances < 400E+3, ]
   print(paste0(100*dim(ts.pairs.near)[1]/dim(ts.pairs)[1], '% of original pair entries remain.'))
@@ -219,122 +344,44 @@ GetNormalizedDistance <- function (.pairs.id){
   return (distn[pair.id.pairs.id==.pairs.id, 'dist.normalized.distances'])
 }
 
-#ts.pairs.near <- FilterOutDistantPairs(ts.pairs)
-#ts.pairs.near.orderedSN <- OrderAllPairsByLatitude(ts.pairs.near)
 
-#save(ts.pairs.near.orderedSN,
-#     file = "../02_intermediate/ts.pairs.near.orderedSN.RData")
-load("../02_intermediate/ts.pairs.near.orderedSN.RData")
+### How dependent are the TS from different districs: correlation btw. pair of TS vs centroid distance
+PlotCorrelationsVsDistances <- function (){
+  plot_ly(x=ts.pairs$distances,
+          y=ts.pairs$spearman.corr,
+          color=ts.pairs$min.avg.cf,
+          type = 'scatter',
+          text = ts.pairs$pairs.id,
+          alpha=0.2,)
+  p <- ggplot(data=ts.pairs, aes(x=distances, y=spearman.corr)) +
+    geom_point(alpha = 0.1) +
+    xlab("Euclidean Distance [km]") +
+    ylab("Spearman Correlation [-]")
+  p
+  ggsave( '../08_reporting/correlation-spearman-vs-distance.png',
+    plot = p,
+    scale = golden_ratio,
+    width = 210/golden_ratio,
+    height = (210/golden_ratio)/golden_ratio,
+    units = 'mm',
+    dpi = 300,
+    limitsize = TRUE,
+  )
 
-#ccfs.DT <- GetAllCCFs(ts.pairs.near.orderedSN)
-#save(ccfs.DT,
-#     file = "../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
-load("../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
-
-
-ccfs.DT$lag <- seq(-72, 72, 1)
-# ccfs.DT$dist.normalized <- MinMaxNormalizeVector(ts.pairs.near.orderedSN[, 'distances'])
-
-ccfs.long.DT <- melt(ccfs.DT, id="lag")  # convert to long format
-ccfs.mini.long.DT <- ccfs.long.DT[1:(145*60),]
-# ccfs.mini.long.DT <- melt(data=ccfs.DT, id.vars=c("lag", 'dist.normalized'), vars=c("DE145-DE114", "DE145-DE146", "DE145-DE132", "DE145-DE12A", "DE145-DE133"))  # convert to long format
-# ccfs.mini.long.DT$dist.normalized <- MinMaxNormalizeVector(ts.pairs.near.orderedSN[, 'distances'])
-
-lines.qty <- dim(ccfs.long.DT)[1]/145
-#p.ccfs <- ggplot(data=ccfs.long.DT,
-#       aes(x=lag, y=value, color=variable)) +
-#    geom_line(show.legend = FALSE, alpha=0.001) +
-#    xlab("Lag [h]") +
-#    ylab("Pearson CCF [-]") +
-#    scale_x_continuous(breaks = c(-72, -48, - 24, 0, 24, 48, 72)) +
-#    scale_color_manual(values=rep('#F98C0AFF', lines.qty))
-#p.ccfs
-#
-#ggsave(
-#  filename = paste0('../08_reporting/ccf-all_',
-#                  format(Sys.time(), "%Y%m%d_%H%M%S"),
-#                  '.png'),
-#  plot = p.ccfs,
-#  scale = golden_ratio,
-#  width = 210/golden_ratio,
-#  height = (210/golden_ratio)/golden_ratio,
-#  units = 'mm',
-#  dpi = 300,
-#  limitsize = TRUE,
-#)
-
-p.ccf.sample <- ggplot(data=ccfs.long.DT[variable=='DE145-DEB22']) +
-    geom_segment(aes(xend=lag, x=lag, yend=0, y=value), show.legend = FALSE, alpha=1, color='#F98C0AFF') +
-    xlab("Lag [h]") +
-    ylab("Pearson CCF [-]") +
-    scale_x_continuous(breaks = c(-72, -48, - 24, 0, 24, 48, 72)) +
-    scale_y_continuous(breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)) +
-    ylim(0, 1)
-p.ccf.sample
-
-ggsave(
-  filename = paste0('../08_reporting/ccf-sample_',
-                  format(Sys.time(), "%Y%m%d_%H%M%S"),
-                  '.png'),
-  plot = p.ccf.sample,
-  scale = golden_ratio,
-  width = 210/golden_ratio,
-  height = (210/golden_ratio)/golden_ratio,
-  units = 'mm',
-  dpi = 300,
-  limitsize = TRUE,
-)
-
-# ggplotly(p)
-
-#ggplot(data=ccfs.DT)
-
-#ccf.object <- ccf(rank(as.ts(capacity.factors[, 'DED43'])),
-#                  rank(as.ts(capacity.factors[, 'DED53'])),
-#                  lag = 6,
-#                  plot = TRUE)
-#
-#plot(x=seq(-6,6), y=ccf.object$acf)
-#
-#ts.pairs$ccf =  mapply(ccf, capacity.factors, MoreArgs = list(lag.max = 72))
-#  ccf(rank(as.ts(capacity.factors[,'DEA56'])), rank(as.ts(capacity.factors[,'DEA59'])), lag.max = 72)
-
-### How dependent are the TS from different districs: TS correlation vs centroid distance
-#plot_ly(x=ts.pairs$distances,
-#        y=ts.pairs$spearman.corr,
-#        color=ts.pairs$min.avg.cf,
-#        type = 'scatter',
-#        text = ts.pairs$pairs.id,
-#        alpha=0.2,)
-#p <- ggplot(data=ts.pairs, aes(x=distances, y=spearman.corr)) +
-#  geom_point(alpha = 0.1) +
-#  xlab("Euclidean Distance [km]") +
-#  ylab("Spearman Correlation [-]")
-#p
-#ggsave( '../08_reporting/correlation-spearman-vs-distance.png',
-#  plot = p,
-#  scale = golden_ratio,
-#  width = 210/golden_ratio,
-#  height = (210/golden_ratio)/golden_ratio,
-#  units = 'mm',
-#  dpi = 300,
-#  limitsize = TRUE,
-#)
-#
-#p <- ggplot(data=ts.pairs, aes(x=distances, y=pearson.corr)) +
-#  geom_point(alpha = 0.1) +
-#  xlab("Euclidean Distance [km]") +
-#  ylab("Pearson Correlation [-]")
-#p
-#ggsave( '../08_reporting/correlation-pearson-vs-distance.png',
-#  plot = p,
-#  scale = golden_ratio,
-#  width = 210/golden_ratio,
-#  height = (210/golden_ratio)/golden_ratio,
-#  units = 'mm',
-#  dpi = 300,
-#  limitsize = TRUE,
-#)
-# ggplotly(p)
-
+  p <- ggplot(data=ts.pairs, aes(x=distances, y=pearson.corr)) +
+    geom_point(alpha = 0.1) +
+    xlab("Euclidean Distance [km]") +
+    ylab("Pearson Correlation [-]")
+  p
+  ggsave( '../08_reporting/correlation-pearson-vs-distance.png',
+    plot = p,
+    scale = golden_ratio,
+    width = 210/golden_ratio,
+    height = (210/golden_ratio)/golden_ratio,
+    units = 'mm',
+    dpi = 300,
+    limitsize = TRUE,
+  )
+   # ggplotly(p)
+}
 
