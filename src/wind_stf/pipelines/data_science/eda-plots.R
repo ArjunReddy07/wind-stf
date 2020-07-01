@@ -22,17 +22,17 @@ load("../02_intermediate/eda.vars.RData")
 
 ### What is a typical value for yearly WPG-kW? What districts present approx this value?
 # A: median = 79243199 [kW]; DEB22 79549998 [kW]
-#PlotYearlyWPGkWh <- function(){
-#   p.wpg.yearly <- ggplot(data.frame(val=power.generated.yearly), aes(x=val)) +
-#    geom_density() +
-#    geom_rug(alpha=0.5) +
-#    geom_vline(xintercept = median(power.generated.yearly), colour="green", linetype = "dashed") +
-#    geom_text(aes(x=median(power.generated.yearly), label="median\n", y=0.05), colour="black", alpha=0.7, angle=90, text=element_text(size=11)) +
-#    xlab("2015 Average yearly power generation by district [kW]") +
-#    ylab("Estimated Density [-]") +
-#    scale_x_log10()
-#  p.wpg.yearly
-#}
+PlotYearlyWPGkWh <- function(){
+   p.wpg.yearly <- ggplot(data.frame(val=power.generated.yearly), aes(x=val)) +
+    geom_density() +
+    geom_rug(alpha=0.5) +
+    geom_vline(xintercept = median(power.generated.yearly), colour="green", linetype = "dashed") +
+    geom_text(aes(x=median(power.generated.yearly), label="median\n", y=0.05), colour="black", alpha=0.7, angle=90, text=element_text(size=11)) +
+    xlab("2015 Average yearly power generation by district [kW]") +
+    ylab("Estimated Density [-]") +
+    scale_x_log10()
+  p.wpg.yearly
+}
 #PlotYearlyWPGkWh()
 
 ### How does a typical WPG-kWh time series look like?
@@ -79,7 +79,6 @@ PlotTypicalWPGkwh <- function() {
           axis.title.y = element_blank(),
           axis.title.x = element_text(size = rel(0.75))
     )
-  # p.wpg.daily.kwh.density
   p.wpg.daily.kw <- grid.arrange(p.wpg.daily.kwh.xts, p.wpg.daily.kwh.density, ncol = 2, nrow = 1, widths = c(5, 1))
 
   ggsave(
@@ -165,38 +164,31 @@ PlotTypicalWPGcf <- function() {
 # where the northernmost district in the pair is lagged in relation to the southernmost one in the pair.
 # This follows the consideration that, in Germany, wind flows from SSW (240°) tend to predominate both in
 # frequency and speed and, in consequence, also in power \cite{windatlas}.
-#FilterOutDistantPairs <- function(ts.pairs){
-#  ts.pairs.near <- ts.pairs[distances < 400E+3, ]
-#  print(paste0(100*dim(ts.pairs.near)[1]/dim(ts.pairs)[1], '% of original pair entries remain.'))
-#  return(ts.pairs.near)
-#}
-#
-#OrderPairByLatitude <- function(ids_pair){
-#  id1 <- ids_pair[1]
-#  id2 <- ids_pair[2]
-#
-#  # has.switched <- FALSE
-#  ordered.id_pair <- c(id1, id2)
-#  if (turbines.centroids.dt[NUTS_ID==id1, lat] > turbines.centroids.dt[NUTS_ID==id2, lat]){
-#     ordered.id_pair <- c(id2, id1)
-#  }
-#  return(ordered.id_pair)
-#}
-#
-#OrderAllPairsByLatitude <- function(ts.pairs){
-#  ordered.id_pairs <- apply(ts.pairs[, c('id1', 'id2')], MARGIN=1, FUN=OrderPairByLatitude)
-#  ts.pairs.ordered <- ts.pairs
-#  ts.pairs.ordered$id1 <- ordered.id_pairs[1, ]
-#  ts.pairs.ordered$id2 <- ordered.id_pairs[2, ]
-#  return(ts.pairs.ordered)
-#}
-#
-#ts.pairs.near <- FilterOutDistantPairs(ts.pairs)
-#ts.pairs.near.orderedSN <- OrderAllPairsByLatitude(ts.pairs.near)
-#
-#save(ts.pairs.near.orderedSN,
-#     file = "../02_intermediate/ts.pairs.near.orderedSN.RData")
-load("../02_intermediate/ts.pairs.near.orderedSN.RData")
+FilterOutDistantPairs <- function(ts.pairs){
+  ts.pairs.near <- ts.pairs[distances < 400E+3, ]
+  print(paste0(100*dim(ts.pairs.near)[1]/dim(ts.pairs)[1], '% of original pair entries remain.'))
+  return(ts.pairs.near)
+}
+
+OrderPairByLatitude <- function(ids_pair){
+  id1 <- ids_pair[1]
+  id2 <- ids_pair[2]
+
+  # has.switched <- FALSE
+  ordered.id_pair <- c(id1, id2)
+  if (turbines.centroids.dt[NUTS_ID==id1, lat] > turbines.centroids.dt[NUTS_ID==id2, lat]){
+     ordered.id_pair <- c(id2, id1)
+  }
+  return(ordered.id_pair)
+}
+
+OrderAllPairsByLatitude <- function(ts.pairs){
+  ordered.id_pairs <- apply(ts.pairs[, c('id1', 'id2')], MARGIN=1, FUN=OrderPairByLatitude)
+  ts.pairs.ordered <- ts.pairs
+  ts.pairs.ordered$id1 <- ordered.id_pairs[1, ]
+  ts.pairs.ordered$id2 <- ordered.id_pairs[2, ]
+  return(ts.pairs.ordered)
+}
 
 GetCCF <- function(id1, id2){
   ccf.object <- ccf(rank(as.ts(capacity.factors[, id1])),
@@ -214,15 +206,6 @@ GetAllCCFs <- function(ts.pairs){
   names(ccfs.DT) <- ts.pairs$pairs.id
   return(ccfs.DT)
 }
-#ccf1 <- GetCCF(ts.pairs.near.orderedSN[1, 'id1'], ts.pairs.near.orderedSN[1, 'id2'])
-#ccf2 <- GetCCF('DE145', 'DE114')
-#ccf2 <- GetCCF('DE145', 'DEB22')
-#ccf3 <- GetCCF('DE145', 'DE145')
-
-#ccfs.DT <- GetAllCCFs(ts.pairs.near.orderedSN)
-#save(ccfs.DT,
-#     file = "../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
-load("../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
 
 MinMaxNormalizeVector <- function(x){
   x.normalized <- (x-min(x))/(max(x)-min(x))
@@ -236,6 +219,19 @@ GetNormalizedDistance <- function (.pairs.id){
   return (distn[pair.id.pairs.id==.pairs.id, 'dist.normalized.distances'])
 }
 
+#ts.pairs.near <- FilterOutDistantPairs(ts.pairs)
+#ts.pairs.near.orderedSN <- OrderAllPairsByLatitude(ts.pairs.near)
+
+#save(ts.pairs.near.orderedSN,
+#     file = "../02_intermediate/ts.pairs.near.orderedSN.RData")
+load("../02_intermediate/ts.pairs.near.orderedSN.RData")
+
+#ccfs.DT <- GetAllCCFs(ts.pairs.near.orderedSN)
+#save(ccfs.DT,
+#     file = "../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
+load("../02_intermediate/ts.pairs.ccfs.DT.orderedSN.RData")
+
+
 ccfs.DT$lag <- seq(-72, 72, 1)
 # ccfs.DT$dist.normalized <- MinMaxNormalizeVector(ts.pairs.near.orderedSN[, 'distances'])
 
@@ -245,20 +241,42 @@ ccfs.mini.long.DT <- ccfs.long.DT[1:(145*60),]
 # ccfs.mini.long.DT$dist.normalized <- MinMaxNormalizeVector(ts.pairs.near.orderedSN[, 'distances'])
 
 lines.qty <- dim(ccfs.long.DT)[1]/145
-p.ccfs <- ggplot(data=ccfs.long.DT,
-       aes(x=lag, y=value, color=variable)) +
-    geom_line(show.legend = FALSE, alpha=0.001) +
+#p.ccfs <- ggplot(data=ccfs.long.DT,
+#       aes(x=lag, y=value, color=variable)) +
+#    geom_line(show.legend = FALSE, alpha=0.001) +
+#    xlab("Lag [h]") +
+#    ylab("Pearson CCF [-]") +
+#    scale_x_continuous(breaks = c(-72, -48, - 24, 0, 24, 48, 72)) +
+#    scale_color_manual(values=rep('#F98C0AFF', lines.qty))
+#p.ccfs
+#
+#ggsave(
+#  filename = paste0('../08_reporting/ccf-all_',
+#                  format(Sys.time(), "%Y%m%d_%H%M%S"),
+#                  '.png'),
+#  plot = p.ccfs,
+#  scale = golden_ratio,
+#  width = 210/golden_ratio,
+#  height = (210/golden_ratio)/golden_ratio,
+#  units = 'mm',
+#  dpi = 300,
+#  limitsize = TRUE,
+#)
+
+p.ccf.sample <- ggplot(data=ccfs.long.DT[variable=='DE145-DEB22']) +
+    geom_segment(aes(xend=lag, x=lag, yend=0, y=value), show.legend = FALSE, alpha=1, color='#F98C0AFF') +
     xlab("Lag [h]") +
     ylab("Pearson CCF [-]") +
     scale_x_continuous(breaks = c(-72, -48, - 24, 0, 24, 48, 72)) +
-    scale_color_manual(values=rep('#F98C0AFF', lines.qty))
-p.ccfs
+    scale_y_continuous(breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)) +
+    ylim(0, 1)
+p.ccf.sample
 
 ggsave(
-  filename = paste0('../08_reporting/ccf-all_',
+  filename = paste0('../08_reporting/ccf-sample_',
                   format(Sys.time(), "%Y%m%d_%H%M%S"),
                   '.png'),
-  plot = p.ccfs,
+  plot = p.ccf.sample,
   scale = golden_ratio,
   width = 210/golden_ratio,
   height = (210/golden_ratio)/golden_ratio,
