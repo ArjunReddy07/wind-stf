@@ -37,9 +37,13 @@ golden_ratio <- (1+sqrt(5))/2
 
 # Loading data ===========================================
 # Ensure current working dir is data/01_raw
-if(!dir.exists("./metadata")){
+tryCatch(
+  {
   setwd("./data/01_raw")
-}
+  },
+  error = function( err ){
+    print("Already in the expected working dir. :)")}
+)
 
 LoadGeodata <- function(){
   # Get geospatial data: first try from local files, then download from GISCO if necessary
@@ -108,7 +112,6 @@ TransformMatrixIntoVector <- function(A){
   return(V)
 }
 
-
 GetPowerInstalled <- function(metadata=turbines.metadata){
   power.installed.deltas <- aggregate(power ~ dt + NUTS_ID, data=metadata, sum)  # installed power aggregated for sameday, same district commissionings
 
@@ -144,7 +147,6 @@ GetPowerInstalledTimeSeries <- function(.power.installed=power.installed, colnam
 
   return(power.installed.xts)
 }
-
 
 GetAllCapacityFactorsTimeSeries <- function(power.generated.xts, power.installed.xts){
   cf <- power.generated.xts/power.installed.xts
@@ -279,13 +281,91 @@ power.generated.yearly <- apply(power.generated.xts, MARGIN = 2, sum)
 
 turbines.centroids.dt <- GetTurbinesCentroidsDT()
 
-save(geodata,
-     turbines.centroids.dt,
-     district.pairs,
-     ts.pairs,
-     power.installed.xts,
-     power.generated.xts,
-     capacity.factors,
-     power.generated.yearly,
-     file = "../02_intermediate/eda.vars.RData")
-# load("../02_intermediate/eda.vars.RData")
+
+#save(geodata,
+#     turbines.centroids.dt,
+#     district.pairs,
+#     ts.pairs,
+#     power.installed.xts,
+#     power.generated.xts,
+#     capacity.factors,
+#     power.generated.yearly,
+#     file = "../02_intermediate/eda.vars.RData")
+
+# ===============================
+# Plotting
+# ===============================
+# NUTS3
+nuts3map <-  tm_shape(geodata$de, xlim=c(10.458-5,10.458+5)) + tm_fill(col="#223949") + tm_borders(col="#304A5C") +
+  tm_shape(geodata$eu, xlim=c(10.458-6,10.458+6)) + tm_fill(col="#09101D") +
+  tm_layout(bg.color = "#12232f", inner.margins = c(0, .02, .02, .02))
+nuts3map
+#tmap_save(nuts3map,
+#          filename = paste0('../08_reporting/districs-map_',
+#                            format(Sys.time(), "%Y%m%d_%H%M%S"),
+#                            '.png'),
+#          dpi = 600,
+#          outer.margins = c(0, 0, 0, 0))
+
+
+# Turbine locations: map
+color.water <- "#64747b"
+color.eu <- "#D9DEDE"
+color.de <- "#F5FAFA"
+
+#turbines.metadata.st['power.normalized'] <- ( turbines.metadata.st['power'] - min(turbines.metadata.st['power']) ) / ( max( turbines.metadata.st['power'] ) - min(turbines.metadata.st['power']) )
+#turbines.metadata['power.normalized'] <- turbines.metadata.st['power.normalized']
+turbines.metadata.st['power'] <- turbines.metadata.st['power'] * 1E-03
+turbines.metadata['power'] <- turbines.metadata.st['power']
+
+turbines.metadata['dt.year'] <- apply(data.table(turbines.metadata$dt), MARGIN=1, FUN=lubridate::year) %>%
+                                sapply(., FUN=as.integer)
+
+turbines.metadata <- turbines.metadata[order(turbines.metadata$dt.year),]
+
+turbines.locations <-
+  tm_shape(geodata$de, xlim=c(10.458-6,10.458+6)) +
+  tm_fill(col=color.de) +
+
+  tm_shape(geodata$eu, xlim=c(10.458-6,10.458+6))+
+  tm_fill(col=color.eu) +
+
+  tm_shape(turbines.metadata) +
+  tm_bubbles(alpha=0.25, border.alpha = 0,
+             col="dt.year",
+             style="quantile",
+             palette = viridisLite::inferno(n=5, direction = -1),
+             title.col="Commisioning \n Year", legend.col.show = TRUE, legend.col.is.portrait = TRUE,
+             size="power",
+             perceptual=TRUE,
+             title.size="Rated Power [MW]", legend.size.show = TRUE
+  ) +
+  tm_layout(bg.color = color.water,
+            inner.margins = c(0, .02, .02, .02),
+            legend.format=list(fun=function(x) formatC(x, digits=0, format="d")),
+            legend.position = c("right", "bottom"))
+  # tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.7, position = c("left", "bottom"))
+turbines.locations
+
+tmap_save(turbines.locations,
+          filename = paste0('../08_reporting/map_turbines_locations_',
+                  format(Sys.time(), "%Y%m%d_%H%M%S"),
+                  '.png'),
+          dpi=600,
+          outer.margins = c(0,0,0,0))
+
+# Turbine counts: NUTS3 aggregation map
+turbines.nuts3aggregation <- st_contains(geodata_de, turbines.metadata)
+geodata_de$turbine.counts <- unlist(lapply(turbines.nuts3aggregation, length))
+geodata_de$turbines.ids <- lapply(turbines.nuts3aggregation, unlist)
+
+turbine.counts.map <-  tm_shape(geodata_de, xlim=c(10.458-5,10.458+5)) + tm_borders(col="#223949") + tm_fill(col="turbine.counts", breaks=c(0, 1, 10, 30, 100, 300, 762) , palette = get_brewer_pal("Blues", n = 6, contrast = c(0, 1))) +
+  tm_shape(geodata_eu, xlim=c(10.458-6,10.458+6)) + tm_fill(col="#09101D") +
+  tm_layout(bg.color = "#12232f", inner.margins = c(0, .02, .02, .02), legend.text.color = "#f5fafa", legend.title.color="#f5fafa", legend.position = c("left", "top"))
+turbine.counts.map
+#tmap_save(turbine.counts.map,
+#          filename = paste0('../08_reporting/map_turbine_counts_',
+#                            format(Sys.time(), "%Y%m%d_%H%M%S"),
+#                            '.png'),
+#          dpi = 600,
+#          outer.margins = c(0, 0, 0, 0))
