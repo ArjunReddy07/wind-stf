@@ -192,7 +192,7 @@ PlotTypicalWPGcf <- function() {
     limitsize = TRUE,
   )
 }
-# PlotTypicalWPGcf()
+PlotTypicalWPGcf()
 
 ### How do ALL WPG-CF time series look like?
 PlotAllWpgCf <- function() {
@@ -429,4 +429,7 @@ PlotCorrelationsVsDistances <- function (){
   )
    # ggplotly(p)
 }
-PlotCorrelationsVsDistances()
+
+# iea.dt <- read.csv("data/08_reporting/presentation/onshore-wind-power-generation-in-the-sustainable-development-scenario-2000-2030.csv", sep=";")
+
+#PlotCorrelationsVsDistances()
