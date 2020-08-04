@@ -1,62 +1,142 @@
 # Here you can define all your data sets by using simple YAML syntax.
 #
 # Documentation for this file format can be found in "The Data Catalog"
-# Link: https://kedro.readthedocs.io/en/stable/04_user_guide/04_data_catalog.html
+# Link: https://kedro.readthedocs.io/en/stable/05_data/01_data_catalog.html
 
-#
-# We support interacting with a variety of data stores including local file systems, cloud, network and HDFS
-#
-# An example data set definition can look as follows:
-#
-#bikes:
-#  type: pandas.CSVDataSet
-#  filepath: "data/01_raw/bikes.csv"
-#
-#weather:
-#  type: spark.SparkDataSet
-#  filepath: s3a://your_bucket/data/01_raw/weather*
-#  file_format: csv
-#  credentials: dev_s3
-#  load_args:
-#    header: True
-#    inferSchema: True
-#  save_args:
-#    sep: '|'
-#    header: True
-#
-#scooters:
-#  type: pandas.SQLTableDataSet
-#  credentials: scooters_credentials
-#  table_name: scooters
-#  load_args:
-#    index_col: ['name']
-#    columns: ['name', 'gear']
-#  save_args:
-#    if_exists: 'replace'
-#    # if_exists: 'fail'
-#    # if_exists: 'append'
-#
-# The Data Catalog supports being able to reference the same file using two different DataSet implementations
-# (transcoding), templating and a way to reuse arguments that are frequently repeated. See more here:
-# https://kedro.readthedocs.io/en/stable/04_user_guide/04_data_catalog.html
-#
-# This is a data set used by the "Hello World" example pipeline provided with the project
-# template. Please feel free to remove it once you remove the example pipeline.
 
+# shared configurations
+_csv: &csv
+  type: pandas.CSVDataSet
+  file_format: csv
+  load_args:
+    sep: ','
+  layer: Raw
+
+_hdf: &hdf
+  type: pandas.HDFDataSet
+  save_args:
+    mode: w  # overwrite if file already exists
+    dropna: False
+    
+# datasets
 sensors:
   type: pandas.CSVDataSet
   filepath: data/01_raw/metadata/wind_turbine_data.csv
   load_args:
     index_col: ['id']
     sep: ';'
+  layer: Raw
 
-measurements:
-  type: pandas.CSVDataSet
-  filepath: data/01_raw/power-generation/wpinfeed*
-  file_format: csv
-  load_args:
-    sep: ','
+# measurements:
+#   type: pandas.CSVDataSet
+#   filepath: data/01_raw/power-generation/wpinfeed*
+#   file_format: csv
+#   load_args:
+#     sep: ','
 
 
+measurements hourly 2000:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2000_utc.csv
+
+measurements hourly 2001:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2001_utc.csv
+
+measurements hourly 2002:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2002_utc.csv
+
+measurements hourly 2003:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2003_utc.csv
+
+measurements hourly 2004:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2004_utc.csv
+
+measurements hourly 2005:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2005_utc.csv
+
+measurements hourly 2006:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2006_utc.csv
+
+measurements hourly 2007:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2007_utc.csv
+
+measurements hourly 2008:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2008_utc.csv
+
+measurements hourly 2009:
+  <<: *csv
+  filepath: data/01_raw/power-glayer: Modelseneration/wpinfeed_inkW_nuts3_2011_utc.csv
+
+measurements hourly 2012:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2012_utc.csv
+
+measurements hourly 2013:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2013_utc.csv
+
+measurements hourly 2014:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2014_utc.csv
+
+measurements hourly 2015:
+  <<: *csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2015_utc.csv
 
 
+measurements daily 2000-2015:
+  <<: *hdf
+  filepath: data/02_intermediate/measurements-daily-2000-2015.hdf
+  key: measurements
+  layer: Intermediate
+
+measurements daily 2000-2015 filtered:
+  <<: *hdf
+  filepath: data/03_primary/measurements-daily-2000-2015-filtered.hdf
+  key: measurements_filtered
+  layer: Primary
+
+capacity factors daily 2000-2015:
+  <<: *hdf
+  filepath: data/04_feature/capfactors-daily-2000-2015.hdf
+  key: capfactors
+  layer: Feature
+
+power installed:
+  <<: *hdf
+  filepath: data/04_feature/power-installed-2000-2015.hdf
+  key: power_installed
+  layer: Feature
+
+centroids positions:
+  <<: *hdf
+  filepath: data/04_feature/power-centroids-positions-2000-2015.hdf
+  key: power_centroids
+  layer: Feature
+
+dynamic graph:
+  <<: *hdf
+  filepath: data/05_model_input/dynamic_graph.hdf
+  key: power_centroids
+  layer: Feature
+
+model:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/regressor.pkl
+  versioned: true
+  layer: Models
+
+scoreboard:
+  <<: *hdf
+  filepath: data/08_reporting/scoreboard.hdf
+  key: scoreboard
+  versioned: true
+  layer: Reporting

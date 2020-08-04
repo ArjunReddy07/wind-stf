@@ -34,12 +34,16 @@ Delete this when you start working on your own Kedro project.
 
 from kedro.pipeline import Pipeline, node
 
-from .nodes import split_data
+from .nodes import split_data, get_power_installed, get_capacity_factor, get_all_capacity_factors
 
 
 def create_pipeline(**kwargs):
     return Pipeline(
         [
+            node(
+              func=get_power_installed,
+              inputs=None
+            ),
             node(
                 split_data,
                 ["example_iris_data", "params:example_test_data_ratio"],

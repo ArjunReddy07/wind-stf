@@ -32,8 +32,19 @@ PLEASE DELETE THIS FILE ONCE YOU START WORKING ON YOUR OWN PROJECT!
 """
 
 from typing import Any, Dict
-
 import pandas as pd
+
+
+def get_power_installed(nuts_id: str) -> pd.Series:
+    return None
+
+
+def get_capacity_factor(nuts_id: str) -> pd.Series:
+    return None
+
+
+def get_all_capacity_factors(power_generation_kW: pd.Dataframe) -> pd.DataFrame:
+    return None
 
 
 def split_data(data: pd.DataFrame, example_test_data_ratio: float) -> Dict[str, Any]:
