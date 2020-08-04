@@ -40,6 +40,62 @@ import numpy as np
 import pandas as pd
 
 
+def build_spatio_temporal_dataset(
+        capacity_factors_daily_2000to2015: pd.DataFrame,
+        centroids_positions: pd.DataFrame,
+) -> pd.DataFrame:
+
+    dynamic_graph = pd.DataFrame(None)
+    return dynamic_graph
+
+
+def get_split_positions():
+    cv_splits_dict = None
+    return cv_splits_dict
+
+
+def split_data(data: pd.DataFrame, example_test_data_ratio: float) -> Dict[str, Any]:
+    """Node for splitting the classical Iris data set into training and test
+    sets, each split into features and labels.
+    The split ratio parameter is taken from conf/project/parameters.yml.
+    The data and the parameters will be loaded and provided to your function
+    automatically when the pipeline is executed and it is time to run this node.
+    """
+    data.columns = [
+        "sepal_length",
+        "sepal_width",
+        "petal_length",
+        "petal_width",
+        "target",
+    ]
+    classes = sorted(data["target"].unique())
+    # One-hot encoding for the target variable
+    data = pd.get_dummies(data, columns=["target"], prefix="", prefix_sep="")
+
+    # Shuffle all the data
+    data = data.sample(frac=1).reset_index(drop=True)
+
+    # Split to training and testing data
+    n = data.shape[0]
+    n_test = int(n * example_test_data_ratio)
+    training_data = data.iloc[n_test:, :].reset_index(drop=True)
+    test_data = data.iloc[:n_test, :].reset_index(drop=True)
+
+    # Split the data to features and labels
+    train_data_x = training_data.loc[:, "sepal_length":"petal_width"]
+    train_data_y = training_data[classes]
+    test_data_x = test_data.loc[:, "sepal_length":"petal_width"]
+    test_data_y = test_data[classes]
+
+    # When returning many variables, it is a good practice to give them names:
+    return dict(
+        train_x=train_data_x,
+        train_y=train_data_y,
+        test_x=test_data_x,
+        test_y=test_data_y,
+    )
+
+
 def train_model(
     train_x: pd.DataFrame, train_y: pd.DataFrame, parameters: Dict[str, Any]
 ) -> np.ndarray:
@@ -91,7 +147,7 @@ def predict(model: np.ndarray, test_x: pd.DataFrame) -> np.ndarray:
     return np.argmax(result, axis=1)
 
 
-def report_accuracy(predictions: np.ndarray, test_y: pd.DataFrame) -> None:
+def report_scores(predictions: np.ndarray, test_y: pd.DataFrame) -> None:
     """Node for reporting the accuracy of the predictions performed by the
     previous node. Notice that this function has no outputs, except logging.
     """

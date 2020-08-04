@@ -34,25 +34,71 @@ Delete this when you start working on your own Kedro project.
 
 from kedro.pipeline import Pipeline, node
 
-from .nodes import split_data, get_power_installed, get_capacity_factor, get_all_capacity_factors
+from .nodes import (
+    concatenate,
+    aggregate_temporally,
+    filter_districts,
+    convert_kw_to_capfactor,
+    build_power_installed_mts,
+    build_power_centroids_mts,
+)
 
 
 def create_pipeline(**kwargs):
     return Pipeline(
         [
             node(
-              func=get_power_installed,
-              inputs=None
+                func=concatenate,
+                name=r"Concatenate",
+                inputs=[
+                    # "measurements_hourly_2000",
+                    # "measurements_hourly_2001",
+                    # "measurements_hourly_2002",
+                    # "measurements_hourly_2003",
+                    # "measurements_hourly_2004",
+                    # "measurements_hourly_2005",
+                    # "measurements_hourly_2006",
+                    # "measurements_hourly_2007",
+                    # "measurements_hourly_2008",
+                    # "measurements_hourly_2009",
+                    # "measurements_hourly_2010",
+                    # "measurements_hourly_2011",
+                    # "measurements_hourly_2012",
+                    # "measurements_hourly_2013",
+                    "measurements_hourly_2014",
+                    "measurements_hourly_2015",
+                ],
+                outputs="measurements_hourly_2000to2015",
             ),
             node(
-                split_data,
-                ["example_iris_data", "params:example_test_data_ratio"],
-                dict(
-                    train_x="example_train_x",
-                    train_y="example_train_y",
-                    test_x="example_test_x",
-                    test_y="example_test_y",
-                ),
-            )
+                func=aggregate_temporally,
+                name=r"Aggregate Temporally",
+                inputs="measurements_hourly_2000to2015",
+                outputs="measurements_daily_2000to2015",
+            ),
+            node(
+                func=filter_districts,
+                name=r"Filter Districts",
+                inputs="measurements_daily_2000to2015",
+                outputs="measurements_daily_2000to2015_filtered",
+            ),
+            node(
+                func=build_power_installed_mts,
+                name=r"Get Power Installed TSs",
+                inputs="sensors",
+                outputs="power_installed",
+            ),
+            node(
+                func=build_power_centroids_mts,
+                name=r"Get Power Centroids Positions TSs",
+                inputs="sensors",
+                outputs="centroids_positions",
+            ),
+            node(
+                func=convert_kw_to_capfactor,
+                name=r"Transform kW to CF",
+                inputs=["measurements_daily_2000to2015_filtered", "power_installed"],
+                outputs="capacity_factors_daily_2000to2015",
+            ),
         ]
     )

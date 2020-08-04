@@ -27,6 +27,18 @@ sensors:
     sep: ';'
   layer: Raw
 
+power_installed:
+  <<: *hdf
+  filepath: data/04_feature/power-installed-2000-2015.hdf
+  key: power_installed
+  layer: Feature
+
+centroids_positions:
+  <<: *hdf
+  filepath: data/04_feature/power-centroids-positions-2000-2015.hdf
+  key: power_centroids
+  layer: Feature
+
 # measurements:
 #   type: pandas.CSVDataSet
 #   filepath: data/01_raw/power-generation/wpinfeed*
@@ -35,104 +47,112 @@ sensors:
 #     sep: ','
 
 
-measurements hourly 2000:
+measurements_hourly_2000:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2000_utc.csv
 
-measurements hourly 2001:
+measurements_hourly_2001:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2001_utc.csv
 
-measurements hourly 2002:
+measurements_hourly_2002:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2002_utc.csv
 
-measurements hourly 2003:
+measurements_hourly_2003:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2003_utc.csv
 
-measurements hourly 2004:
+measurements_hourly_2004:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2004_utc.csv
 
-measurements hourly 2005:
+measurements_hourly_2005:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2005_utc.csv
 
-measurements hourly 2006:
+measurements_hourly_2006:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2006_utc.csv
 
-measurements hourly 2007:
+measurements_hourly_2007:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2007_utc.csv
 
-measurements hourly 2008:
+measurements_hourly_2008:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2008_utc.csv
 
-measurements hourly 2009:
+measurements_hourly_2009:
   <<: *csv
-  filepath: data/01_raw/power-glayer: Modelseneration/wpinfeed_inkW_nuts3_2011_utc.csv
+  filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2011_utc.csv
 
-measurements hourly 2012:
+measurements_hourly_2012:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2012_utc.csv
 
-measurements hourly 2013:
+measurements_hourly_2013:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2013_utc.csv
 
-measurements hourly 2014:
+measurements_hourly_2014:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2014_utc.csv
 
-measurements hourly 2015:
+measurements_hourly_2015:
   <<: *csv
   filepath: data/01_raw/power-generation/wpinfeed_inkW_nuts3_2015_utc.csv
 
+measurements_hourly_2000to2015:
+  <<: *hdf
+  filepath: data/02_intermediate/measurements-hourly-2000-2015.hdf
+  key: measurements_hourly
+  layer: Intermediate
 
-measurements daily 2000-2015:
+measurements_daily_2000to2015:
   <<: *hdf
   filepath: data/02_intermediate/measurements-daily-2000-2015.hdf
   key: measurements
   layer: Intermediate
 
-measurements daily 2000-2015 filtered:
+measurements_daily_2000to2015_filtered:
   <<: *hdf
   filepath: data/03_primary/measurements-daily-2000-2015-filtered.hdf
   key: measurements_filtered
   layer: Primary
 
-capacity factors daily 2000-2015:
+capacity_factors_daily_2000to2015:
   <<: *hdf
   filepath: data/04_feature/capfactors-daily-2000-2015.hdf
   key: capfactors
   layer: Feature
 
-power installed:
+spatio_temporal_df:
   <<: *hdf
-  filepath: data/04_feature/power-installed-2000-2015.hdf
-  key: power_installed
-  layer: Feature
+  filepath: data/05_model_input/spatio_temporal_df.hdf
+  key: spatio_temporal_df
+  layer: Model Input
 
-centroids positions:
+cv_splits_dict:
   <<: *hdf
-  filepath: data/04_feature/power-centroids-positions-2000-2015.hdf
-  key: power_centroids
-  layer: Feature
+  filepath: data/05_model_input/cv_splits_dict.hdf
+  key: cv_splits_dict
+  versioned: true
+  layer: Model Input
 
-dynamic graph:
+model_params:
   <<: *hdf
-  filepath: data/05_model_input/dynamic_graph.hdf
-  key: power_centroids
-  layer: Feature
-
-model:
-  type: pickle.PickleDataSet
-  filepath: data/06_models/regressor.pkl
+  filepath: data/06_models/model.h5
+  key: model_params
   versioned: true
   layer: Models
+
+model_metadata:
+  type: pandas.JSONDataSet
+  filepath: data/08_reporting/model_metadata.json
+  versioned: true
+  layer: Models
+
 
 scoreboard:
   <<: *hdf
