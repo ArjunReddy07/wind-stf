@@ -34,6 +34,7 @@ from wind_stf.pipeline import create_pipelines
 from kedro.framework.context import KedroContext, load_package_context
 from kedro.pipeline import Pipeline
 
+
 class ProjectContext(KedroContext):
     """Users can override the remaining methods from the parent class here,
     or create new ones (e.g. as required by plugins)

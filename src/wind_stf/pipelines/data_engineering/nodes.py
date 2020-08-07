@@ -31,7 +31,7 @@ just for illustrating basic Kedro features.
 PLEASE DELETE THIS FILE ONCE YOU START WORKING ON YOUR OWN PROJECT!
 """
 
-from typing import Any, Dict
+from typing import List, Any
 import pandas as pd
 import nvector as nv
 
@@ -70,7 +70,7 @@ def _get_centroid(lat: pd.Series, lon: pd.Series) -> tuple:
 
 
 # node functions
-def concatenate(data_single_years: [pd.DataFrame]) -> pd.DataFrame:
+def concatenate(*data_single_years: List[pd.DataFrame]) -> pd.DataFrame:  # using inputs of *args type so that any number of dataframes can be used as input
     data_all_years = pd.concat(data_single_years)  # TODO: ensure date | hour format
     return data_all_years
 

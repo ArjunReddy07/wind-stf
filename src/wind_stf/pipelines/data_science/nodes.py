@@ -49,7 +49,7 @@ def build_spatio_temporal_dataset(
     return dynamic_graph
 
 
-def get_split_positions():
+def get_split_positions(n_splits: int, df: pd.DataFrame):
     cv_splits_dict = None
     return cv_splits_dict
 
