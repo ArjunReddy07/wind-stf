@@ -36,26 +36,6 @@ import pandas as pd
 import nvector as nv
 
 
-# helper functions
-def _parse_datetime():
-    return None
-
-
-def _ensure_same_timespans(
-        mts_ref: pd.DataFrame,
-        mts: pd.DataFrame,
-) -> pd.DataFrame:
-    start = mts_ref['date'][0]
-    end = mts_ref['date'][-1]
-    valid_dates = (
-            (mts['date'] > start)
-            and
-            (mts['date'] < end)
-    )
-    mts_trimmed = mts.loc[valid_dates, :]
-    return mts_trimmed
-
-
 def _get_centroid(lat: pd.Series, lon: pd.Series) -> tuple:
     # TODO: currently getting centroid of turbines installed anytime. Get centroid for each day instead!
     # TODO: currently getting geospatial centroid. Get power-weighted centroid instead!
@@ -71,15 +51,12 @@ def _get_centroid(lat: pd.Series, lon: pd.Series) -> tuple:
 
 # node functions
 def concatenate(*data_single_years: List[pd.DataFrame]) -> pd.DataFrame:  # using inputs of *args type so that any number of dataframes can be used as input
-    data_all_years = pd.concat(data_single_years)  # TODO: ensure date | hour format
+    data_all_years = pd.concat(data_single_years)
     return data_all_years
 
 
-def aggregate_temporally(data_hourly: pd.DataFrame) -> pd.DataFrame:
-    data_daily = data_hourly.groupby(
-        by=['date'],  # TODO: drop "hour" column
-        as_index=False,
-    ).agg(func='sum')  # TODO: ensure date | hour format
+def aggregate_temporally(data_hourly: pd.DataFrame, target_freq: str = 'D') -> pd.DataFrame:
+    data_daily = data_hourly.resample(rule=target_freq).mean()
     return data_daily
 
 
@@ -95,17 +72,22 @@ def convert_kw_to_capfactor(
         power_generated_daily: pd.DataFrame,
         power_installed_daily: pd.DataFrame,
 ) -> pd.DataFrame:
-    power_installed_daily = _ensure_same_timespans(mts_ref=power_generated_daily, mts=power_installed_daily)
-    data_capfactors = power_generated_daily.divide(power_installed_daily, axis='columns')  # TODO: ensure it is dividing same-label columns, regardless of columns ordering
-    return data_capfactors
+
+    capfactors_mts = power_generated_daily / power_installed_daily.loc[power_generated_daily.index, power_generated_daily.columns]
+    capfactors_mts_filled = capfactors_mts.fillna(value=0.0)
+    return capfactors_mts
 
 
 def build_power_installed_mts(sensors: pd.DataFrame) -> pd.DataFrame:
-    power_installed = sensors.groupby(by=['NUTS_ID', 'dt'])['power'].cumsum()
-    return power_installed
+    sensors_sortedbydate = sensors.sort_values('commissioning_date')
+    powerdeltas_daily_districtwise = sensors_sortedbydate.groupby(by=['nuts_id', 'commissioning_date'], sort=False).agg({'power': 'sum'})
+    power_installed = powerdeltas_daily_districtwise.groupby('nuts_id').agg({'power': 'cumsum'})
+    power_installed_unstacked = power_installed.unstack(level='nuts_id')
+    power_installed_mts = power_installed_unstacked.asfreq('D').ffill().fillna(value=0, axis='rows')
+    power_installed_mts = power_installed_mts.droplevel(level=0, axis='columns')  # remove irrelevant column level name 'power'
+    return power_installed_mts
 
 
 def build_power_centroids_mts(sensors: pd.DataFrame) -> pd.DataFrame:
-    power_centroids = sensors.groupby(['NUTS_ID'])['lat', 'lon'].expanding().mean()  # TODO: currently getting geospatial centroid. Get power-weighted centroid instead!
-    return power_centroids
-
+    power_centroids_mts = sensors.groupby(['NUTS_ID'])['lat', 'lon'].expanding().mean()  # TODO: currently getting geospatial centroid. Get power-weighted centroid instead!
+    return power_centroids_mts

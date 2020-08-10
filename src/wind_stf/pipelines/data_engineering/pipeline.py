@@ -69,16 +69,16 @@ def create_pipeline(**kwargs):
                 outputs="measurements_daily_2000to2015_filtered",
             ),
             node(
-                func=build_power_installed_mts,
-                name=r"Get Power Installed TSs",
-                inputs="sensors",
-                outputs="power_installed",
-            ),
-            node(
                 func=build_power_centroids_mts,
                 name=r"Get Power Centroids Positions TSs",
                 inputs="sensors",
                 outputs="centroids_positions",
+            ),
+            node(
+                func=build_power_installed_mts,
+                name="Get Power Installed TSs",
+                inputs="sensors",
+                outputs="power_installed",
             ),
             node(
                 func=convert_kw_to_capfactor,

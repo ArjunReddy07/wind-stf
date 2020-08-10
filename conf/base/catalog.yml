@@ -9,6 +9,9 @@ _csv: &csv
   type: pandas.CSVDataSet
   load_args:
     sep: ','
+    index_col: [0]
+    parse_dates: [0]
+    infer_datetime_format: True
   layer: Raw
 
 _hdf: &hdf
@@ -22,24 +25,22 @@ sensors:
   type: pandas.CSVDataSet
   filepath: data/01_raw/metadata/wind_turbine_data.csv
   load_args:
-    index_col: ['id']
     sep: ';'
+    header: 0  # for renaming columns with "names" below
+    names: ['id', 'power', 'commissioning_date', 'hub_height', 'diameter', 'nuts_id', 'lon', 'lat', 'N1']
+    usecols: ['power', 'commissioning_date', 'hub_height', 'diameter', 'nuts_id', 'lon', 'lat']
+    parse_dates: ['commissioning_date']
+    infer_datetime_format: True
   layer: Raw
 
 power_installed:
   type: pandas.HDFDataSet
-  save_args:
-    mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/04_feature/power-installed-2000-2015.hdf
   key: power_installed
   layer: Feature
 
 centroids_positions:
   type: pandas.HDFDataSet
-  save_args:
-    mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/04_feature/power-centroids-positions-2000-2015.hdf
   key: power_centroids
   layer: Feature
@@ -110,54 +111,36 @@ measurements_hourly_2015:
 
 measurements_hourly_2000to2015:
   type: pandas.HDFDataSet
-  save_args:
-    # mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/02_intermediate/measurements-hourly-2000-2015.hdf
   key: measurements_hourly
   layer: Intermediate
 
 measurements_daily_2000to2015:
   type: pandas.HDFDataSet
-  save_args:
-    mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/02_intermediate/measurements-daily-2000-2015.hdf
   key: measurements
   layer: Intermediate
 
 measurements_daily_2000to2015_filtered:
   type: pandas.HDFDataSet
-  save_args:
-    mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/03_primary/measurements-daily-2000-2015-filtered.hdf
   key: measurements_filtered
   layer: Primary
 
 capacity_factors_daily_2000to2015:
   type: pandas.HDFDataSet
-  save_args:
-    mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/04_feature/capfactors-daily-2000-2015.hdf
   key: capfactors
   layer: Feature
 
-spatio_temporal_df:
+spatiotemporal_df:
   type: pandas.HDFDataSet
-  save_args:
-    mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/05_model_input/spatio_temporal_df.hdf
   key: spatio_temporal_df
   layer: Model Input
 
 cv_splits_dict:
   type: pandas.HDFDataSet
-  save_args:
-    mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/05_model_input/cv_splits_dict.hdf
   key: cv_splits_dict
   versioned: true
@@ -165,9 +148,6 @@ cv_splits_dict:
 
 model_params:
   type: pandas.HDFDataSet
-  save_args:
-    mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/06_models/model.h5
   key: model_params
   versioned: true
@@ -182,9 +162,6 @@ model_metadata:
 
 scoreboard:
   type: pandas.HDFDataSet
-  save_args:
-    mode: 'w'  # overwrite if file already exists
-    dropna: False
   filepath: data/08_reporting/scoreboard.hdf
   key: scoreboard
   versioned: true
