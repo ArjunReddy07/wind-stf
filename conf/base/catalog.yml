@@ -159,7 +159,6 @@ model_metadata:
   versioned: true
   layer: Models
 
-
 scoreboard:
   type: pandas.HDFDataSet
   filepath: data/08_reporting/scoreboard.hdf

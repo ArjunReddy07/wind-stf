@@ -38,6 +38,7 @@ from .nodes import (
     build_spatio_temporal_dataset,
     get_split_positions,
     train_model,
+    predict,
     report_scores,
 )
 
@@ -60,14 +61,20 @@ def create_pipeline(**kwargs):
             node(
                 func=train_model,
                 name=r"Train Model",
-                inputs=["spatio_temporal_df", "cv_splits_dict"],
+                inputs=["spatio_temporal_df", "cv_splits_dict", "params:learning_hyperparams"],
                 outputs=["model_params", "model_metadata"],
+            ),
+            node(
+                func=predict,
+                name=r"Predict",
+                inputs=["spatio_temporal_df", "cv_splits_dict"],
+                outputs=["train_y_hat", "test_y_hat"],
             ),
             node(
                 func=report_scores,
                 name=r"Report Scores",
-                inputs=["model_params", "model_metadata", "scoreboard"],
-                outputs="scoreboard",  # updated version of scoreboard
+                inputs=["scoreboard", "model_metadata", "train_y_hat", "test_y_hat"],
+                outputs=None,  # updates scoreboard
             ),
         ]
     )

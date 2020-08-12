@@ -1,2 +1,12 @@
 n_splits: 2
 
+learning_hyperparams:
+    approach: hw-es
+    hyperpars:
+      trend: 'add'
+      damped_trend: True
+      seasonal: 'add'
+      seasonal_periods: 365
+      use_boxcox: False
+      # exog_names: None
+
