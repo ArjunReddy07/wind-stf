@@ -45,12 +45,19 @@ def build_spatio_temporal_dataset(
         centroids_positions: pd.DataFrame,
 ) -> pd.DataFrame:
 
-    dynamic_graph = pd.DataFrame(None)
-    return dynamic_graph
+    spatio_temporal_df = pd.DataFrame(None)
+    return spatio_temporal_df
 
 
-def get_split_positions(n_splits: int, df: pd.DataFrame):
-    cv_splits_dict = None
+def get_split_positions(n_splits: int, df: pd.DataFrame) -> Dict[Any]:
+    cv_splits_dict = {
+        'splits1': {
+            'train_x_idx': None,
+            'train_y_idx': None,
+            'test_x_idx': None,
+            'test_y_idx': None,
+        }
+    }
     return cv_splits_dict
 
 

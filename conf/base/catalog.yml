@@ -133,7 +133,7 @@ capacity_factors_daily_2000to2015:
   key: capfactors
   layer: Feature
 
-spatiotemporal_df:
+spatio_temporal_df:
   type: pandas.HDFDataSet
   filepath: data/05_model_input/spatio_temporal_df.hdf
   key: spatio_temporal_df

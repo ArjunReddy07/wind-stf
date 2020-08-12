@@ -58,7 +58,7 @@ def create_pipeline(**kwargs):
             ),
             node(
                 func=aggregate_temporally,
-                name="Aggregate Temporally",
+                name="Downsample",
                 inputs="measurements_hourly_2000to2015",
                 outputs="measurements_daily_2000to2015",
             ),

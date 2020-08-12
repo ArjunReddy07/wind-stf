@@ -65,6 +65,7 @@ def build_power_installed_mts(sensors: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_power_centroids_mts(sensors: pd.DataFrame) -> pd.DataFrame:
+    # TODO: define a cummean and use pd.apply
     # TODO: modularize function for improved readability
 
     # sort dataframe by commissioning date
@@ -84,7 +85,7 @@ def build_power_centroids_mts(sensors: pd.DataFrame) -> pd.DataFrame:
         .reset_index() \
         .set_index('commissioning_date')
 
-    # initialize datafrane
+    # initialize dataframe
     power_centroids_mts = pd.DataFrame(
         index=pd.date_range(
             start=sensors_daily_aggregated.index.min(),
@@ -98,7 +99,7 @@ def build_power_centroids_mts(sensors: pd.DataFrame) -> pd.DataFrame:
         ),
     )
 
-    # fill with available values
+    # fill with available values: coordinates are cumulative means of turbines, power-weighted
     for district in sensors_daily_aggregated['nuts_id'].unique():
         single_district_data = sensors_daily_aggregated[sensors_daily_aggregated['nuts_id'] == district]
         power_centroids_mts[district] = single_district_data[['lat', 'lon']] \
