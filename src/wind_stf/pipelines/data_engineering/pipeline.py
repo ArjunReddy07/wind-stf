@@ -49,7 +49,7 @@ def create_pipeline(**kwargs):
         [
             node(
                 func=concatenate,
-                name=r"Concatenate",
+                name="Concatenate",
                 inputs=[
                     "measurements_hourly_2014",
                     "measurements_hourly_2015",
@@ -58,19 +58,19 @@ def create_pipeline(**kwargs):
             ),
             node(
                 func=aggregate_temporally,
-                name=r"Aggregate Temporally",
+                name="Aggregate Temporally",
                 inputs="measurements_hourly_2000to2015",
                 outputs="measurements_daily_2000to2015",
             ),
             node(
                 func=filter_districts,
-                name=r"Filter Districts",
+                name="Filter Districts",
                 inputs="measurements_daily_2000to2015",
                 outputs="measurements_daily_2000to2015_filtered",
             ),
             node(
                 func=build_power_centroids_mts,
-                name=r"Get Power Centroids Positions TSs",
+                name="Get Power Centroids Positions TSs",
                 inputs="sensors",
                 outputs="centroids_positions",
             ),
@@ -82,7 +82,7 @@ def create_pipeline(**kwargs):
             ),
             node(
                 func=convert_kw_to_capfactor,
-                name=r"Transform kW to CF",
+                name="Transform kW to CF",
                 inputs=["measurements_daily_2000to2015_filtered", "power_installed"],
                 outputs="capacity_factors_daily_2000to2015",
             ),
