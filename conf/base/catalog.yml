@@ -41,9 +41,10 @@ power_installed:
 
 centroids_positions:
   type: pandas.HDFDataSet
-  filepath: data/04_feature/power-centroids-positions-2000-2015.hdf
-  key: power_centroids
-  layer: Feature
+  filepath: data/05_model_input/spatio_temporal_df.hdf
+  key: df_spatial
+  layer: Model Input
+
 
 # measurements:
 #   type: pandas.CSVDataSet
@@ -129,14 +130,8 @@ measurements_daily_2000to2015_filtered:
 
 capacity_factors_daily_2000to2015:
   type: pandas.HDFDataSet
-  filepath: data/04_feature/capfactors-daily-2000-2015.hdf
-  key: capfactors
-  layer: Feature
-
-spatio_temporal_df:
-  type: pandas.HDFDataSet
   filepath: data/05_model_input/spatio_temporal_df.hdf
-  key: spatio_temporal_df
+  key: df_temporal
   layer: Model Input
 
 cv_splits_dict:

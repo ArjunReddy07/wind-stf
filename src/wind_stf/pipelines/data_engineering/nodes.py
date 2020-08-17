@@ -46,10 +46,21 @@ def convert_kw_to_capfactor(
         power_generated_daily: pd.DataFrame,
         power_installed_daily: pd.DataFrame,
 ) -> pd.DataFrame:
+    # calculate capacity factor for each day and district
     capfactors_mts = power_generated_daily / power_installed_daily.loc[
         power_generated_daily.index, power_generated_daily.columns]
+
+    # fill missing values with 0.0
     capfactors_mts_filled = capfactors_mts.fillna(value=0.0)
-    return capfactors_mts
+
+    # assign names for levels in (1) index & (2) columns, for compatibility with spatial data later on
+    capfactors_mts_filled.columns = pd.MultiIndex.from_product(
+        [capfactors_mts_filled.columns, ['power']],
+        names=['nuts_id', 'var']
+    )
+    capfactors_mts_filled.index.rename('date', inplace=True)
+
+    return capfactors_mts_filled
 
 
 def build_power_installed_mts(sensors: pd.DataFrame) -> pd.DataFrame:

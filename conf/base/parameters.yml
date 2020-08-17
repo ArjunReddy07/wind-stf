@@ -1,12 +1,24 @@
-n_splits: 2
+evaluation:
+  rolling_window:
+    n_splits: 2
+  metrics: rmse, mae
 
-learning_hyperparams:
-    approach: hw-es
-    hyperpars:
-      trend: 'add'
-      damped_trend: True
-      seasonal: 'add'
-      seasonal_periods: 365
-      use_boxcox: False
-      # exog_names: None
+experiments:
+  forecasting_approaches: hw-es, arima
+
+training:
+# STANDARD
+#  approach: approach-name
+#    hyperpar: hyperpar-value
+
+  hw-es:
+    trend: 'mul'
+    damped_trend: True
+    seasonal: 'mul'
+    seasonal_periods: 365
+    use_boxcox: False
+    # exog_names: None
+
+  arima:
+
 

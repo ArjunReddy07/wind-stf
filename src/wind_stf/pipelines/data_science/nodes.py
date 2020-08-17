@@ -40,13 +40,18 @@ import numpy as np
 import pandas as pd
 
 
-def build_spatio_temporal_dataset(
-        capacity_factors_daily_2000to2015: pd.DataFrame,
-        centroids_positions: pd.DataFrame,
-) -> pd.DataFrame:
+def build_spatiotemporal_dataset(
+        df_temporal: pd.DataFrame,
+        df_spatial: pd.DataFrame,
+) -> Dict[str, pd.DataFrame]:
 
-    spatio_temporal_df = pd.DataFrame(None)
-    return spatio_temporal_df
+    # spatial dataframe should have the same indexes as the temporal dataframe
+    df_spatial = df_spatial.loc[ df_temporal.index ]
+
+    return {
+        'df_spatial': df_spatial,
+        'df_temporal': df_temporal,
+    }
 
 
 def get_split_positions(n_splits: int, df: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:

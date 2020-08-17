@@ -35,7 +35,7 @@ Delete this when you start working on your own Kedro project.
 from kedro.pipeline import Pipeline, node
 
 from .nodes import (
-    build_spatio_temporal_dataset,
+    build_spatiotemporal_dataset,
     get_split_positions,
     train_model,
     predict,
@@ -47,34 +47,34 @@ def create_pipeline(**kwargs):
     return Pipeline(
         [
             node(
-                func=build_spatio_temporal_dataset,
+                func=build_spatiotemporal_dataset,
                 name=r"Build Spatio-Temporal Dataset",
                 inputs=["centroids_positions", "capacity_factors_daily_2000to2015"],
-                outputs="spatio_temporal_df",
+                outputs=["spatio_temporal_df"],
             ),
-            node(
-                func=get_split_positions,
-                name=r"Get CV Split Indexes",
-                inputs=["params:n_splits", "spatio_temporal_df"],
-                outputs="cv_splits_dict",
-            ),
-            node(
-                func=train_model,
-                name=r"Train Model",
-                inputs=["spatio_temporal_df", "cv_splits_dict", "params:learning_hyperparams"],
-                outputs=["model_params", "model_metadata"],
-            ),
-            node(
-                func=predict,
-                name=r"Predict",
-                inputs=["spatio_temporal_df", "cv_splits_dict"],
-                outputs=["train_y_hat", "test_y_hat"],
-            ),
-            node(
-                func=report_scores,
-                name=r"Report Scores",
-                inputs=["scoreboard", "model_metadata", "train_y_hat", "test_y_hat"],
-                outputs=None,  # updates scoreboard
-            ),
+            # node(
+            #     func=get_split_positions,
+            #     name=r"Get CV Split Indexes",
+            #     inputs=["params:n_splits", "spatio_temporal_df"],
+            #     outputs="cv_splits_dict",
+            # ),
+            # node(
+            #     func=train_model,
+            #     name=r"Train Model",
+            #     inputs=["spatio_temporal_df", "cv_splits_dict", "params:learning_hyperparams"],
+            #     outputs=["model_params", "model_metadata"],
+            # ),
+            # node(
+            #     func=predict,
+            #     name=r"Predict",
+            #     inputs=["spatio_temporal_df", "cv_splits_dict"],
+            #     outputs=["train_y_hat", "test_y_hat"],
+            # ),
+            # node(
+            #     func=report_scores,
+            #     name=r"Report Scores",
+            #     inputs=["scoreboard", "model_metadata", "train_y_hat", "test_y_hat"],
+            #     outputs=None,  # updates scoreboard
+            # ),
         ]
     )
