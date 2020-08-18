@@ -50,7 +50,7 @@ def create_pipeline(**kwargs):
                 func=build_spatiotemporal_dataset,
                 name=r"Build Spatio-Temporal Dataset",
                 inputs=["centroids_positions", "capacity_factors_daily_2000to2015"],
-                outputs=["spatio_temporal_df"],
+                outputs="df_spatiotemporal",
             ),
             # node(
             #     func=get_split_positions,
@@ -65,7 +65,7 @@ def create_pipeline(**kwargs):
             #     outputs=["model_params", "model_metadata"],
             # ),
             # node(
-            #     func=predict,
+            #     func=predict
             #     name=r"Predict",
             #     inputs=["spatio_temporal_df", "cv_splits_dict"],
             #     outputs=["train_y_hat", "test_y_hat"],

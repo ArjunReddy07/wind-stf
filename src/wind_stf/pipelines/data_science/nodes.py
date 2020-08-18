@@ -40,18 +40,34 @@ import numpy as np
 import pandas as pd
 
 
+def _sort_col_level(df: pd.DataFrame, levelname:str ='nuts_id'):
+    target_order = df.columns.sortlevel(level=levelname)[0]
+    df = df[target_order]
+    return df
+
+
 def build_spatiotemporal_dataset(
-        df_temporal: pd.DataFrame,
         df_spatial: pd.DataFrame,
-) -> Dict[str, pd.DataFrame]:
+        df_temporal: pd.DataFrame,
+) -> pd.DataFrame:
 
     # spatial dataframe should have the same indexes as the temporal dataframe
     df_spatial = df_spatial.loc[ df_temporal.index ]
 
-    return {
-        'df_spatial': df_spatial,
-        'df_temporal': df_temporal,
-    }
+    # sort districts order in dataframes for easier dataframes tabular visualization.
+    df_spatial = _sort_col_level(df_spatial, 'nuts_id')
+    df_temporal = _sort_col_level(df_temporal, 'nuts_id')
+
+    # build spatiotemporal dataframe via concatenatation
+    df_spatiotemporal = pd.concat(
+        {
+            'spatial': df_spatial,
+            'temporal': df_temporal,
+        },
+        axis=1,
+        join='inner',
+    )
+    return df_spatiotemporal
 
 
 def get_split_positions(n_splits: int, df: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
