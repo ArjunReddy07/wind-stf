@@ -60,13 +60,11 @@ def build_spatiotemporal_dataset(
 
     # build spatiotemporal dataframe via concatenatation
     df_spatiotemporal = pd.concat(
-        {
-            'spatial': df_spatial,
-            'temporal': df_temporal,
-        },
+        {'spatial': df_spatial, 'temporal': df_temporal},
         axis=1,
         join='inner',
     )
+    df_spatiotemporal.columns.names = ['data_type', 'district', 'var']
     return df_spatiotemporal
 
 
