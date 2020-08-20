@@ -46,13 +46,14 @@ def _sort_col_level(df: pd.DataFrame, levelname:str ='nuts_id'):
     return df
 
 
+def _get_districts(df: pd.DataFrame) -> set:
+    return set(df.columns.get_level_values('nuts_id'))
+
+
 def build_spatiotemporal_dataset(
         df_spatial: pd.DataFrame,
         df_temporal: pd.DataFrame,
 ) -> pd.DataFrame:
-
-    # spatial dataframe should have the same indexes as the temporal dataframe
-    df_spatial = df_spatial.loc[ df_temporal.index ]
 
     # sort districts order in dataframes for easier dataframes tabular visualization.
     df_spatial = _sort_col_level(df_spatial, 'nuts_id')
@@ -65,6 +66,18 @@ def build_spatiotemporal_dataset(
         join='inner',
     )
     df_spatiotemporal.columns.names = ['data_type', 'district', 'var']
+
+    # include only districts present in both df_temporal and df_spatial
+    districts_to_include = set(
+        _get_districts(df_temporal).intersection(
+            _get_districts(df_spatial))
+    )
+
+    df_spatiotemporal = df_spatiotemporal.loc[
+        :,
+        (slice(None), districts_to_include)
+    ]
+
     return df_spatiotemporal
 
 
