@@ -62,8 +62,8 @@ def build_spatiotemporal_dataset(
     # build spatiotemporal dataframe via concatenatation
     df_spatiotemporal = pd.concat(
         {'spatial': df_spatial, 'temporal': df_temporal},
-        axis=1,
-        join='inner',
+        axis=1,  # column-wise concatenation
+        join='inner',  # only timestamps in both df's are included
     )
     df_spatiotemporal.columns.names = ['data_type', 'district', 'var']
 
@@ -81,15 +81,51 @@ def build_spatiotemporal_dataset(
     return df_spatiotemporal
 
 
-def get_split_positions(n_splits: int, df: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
-    cv_splits_dict = {
-        'splits1': {
-            'train_x_idx': None,
-            'train_y_idx': None,
-            'test_x_idx': None,
-            'test_y_idx': None,
+def _split_train_test(df: pd.DataFrame, cv_splits_dict: Dict, pass_id: str) -> Dict[str, Any]:
+    train_idx_start = cv_splits_dict[pass_id]['train_idx'][0]
+    train_idx_end = cv_splits_dict[pass_id]['train_idx'][1]
+
+    test_idx_start = cv_splits_dict[pass_id]['test_idx'][0]
+    test_idx_end = cv_splits_dict[pass_id]['test_idx'][1]
+
+    return {
+        'y_train': df.iloc[train_idx_start:train_idx_end, :],
+        'y_test': df.iloc[test_idx_start:test_idx_end, :],
+    }
+
+
+def get_split_positions(window_size_first_pass: int,
+                        window_size_last_pass: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
+    """
+        cv_splits_dict = {
+        'pass_1': {
+            'train_x_idx': [0, 365],
+            'train_y_idx': [0, 365],
+            'test_x_idx': [365, 465],
+            'test_y_idx': [365, 465],
         }
     }
+    :param n_splits:
+    :param df:
+    :return:
+    """
+
+    cv_splits_dict = {}
+    window_size_increment = int( (window_size_last_pass - window_size_first_pass) / (n_passes-1) )
+    for p in range(n_passes):
+        pass_id = 'pass_' + str(p + 1)
+        cv_splits_dict[pass_id] = {
+                'train_idx': [
+                    0,
+                    window_size_first_pass + p * window_size_increment
+                ],
+                'test_idx': [
+                    window_size_first_pass + p * window_size_increment,
+                    window_size_first_pass + p * window_size_increment + forecasting_window_size,
+                ],
+        }
+
+
     return cv_splits_dict
 
 

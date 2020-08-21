@@ -52,12 +52,12 @@ def create_pipeline(**kwargs):
                 inputs=["centroids_positions", "capacity_factors_daily_2000to2015"],
                 outputs="df_spatiotemporal",
             ),
-            # node(
-            #     func=get_split_positions,
-            #     name=r"Get CV Split Indexes",
-            #     inputs=["params:n_splits", "spatio_temporal_df"],
-            #     outputs="cv_splits_dict",
-            # ),
+            node(
+                func=get_split_positions,
+                name=r"Get CV Split Indexes",
+                inputs=["params:n_splits", "spatio_temporal_df"],
+                outputs="cv_splits_dict",
+            ),
             # node(
             #     func=train_model,
             #     name=r"Train Model",

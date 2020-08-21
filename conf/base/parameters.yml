@@ -1,6 +1,11 @@
 evaluation:
-  rolling_window:
-    n_splits: 2
+  expanding_window:
+    window_size_first_pass: 365
+    window_size_last_pass: 540
+    n_passes: 3
+    forecasting_window_size
+
+
   metrics: rmse, mae
 
 experiments:
