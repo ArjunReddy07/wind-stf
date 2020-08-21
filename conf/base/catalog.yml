@@ -140,9 +140,8 @@ df_spatiotemporal:
   layer: Model Input
 
 cv_splits_dict:
-  type: pandas.HDFDataSet
-  filepath: data/05_model_input/cv_splits_dict.hdf
-  key: cv_splits_dict
+  type: pickle.PickleDataSet
+  filepath: data/05_model_input/cv_splits_dict.pkl
   versioned: true
   layer: Model Input
 

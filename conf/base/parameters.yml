@@ -1,4 +1,5 @@
-cross-validation:
+cross_validation:
+  # expanding window
   window_size_first_pass: 365
   window_size_last_pass: 540
   n_passes: 3
