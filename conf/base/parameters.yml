@@ -1,13 +1,12 @@
 cross-validation:
-  # expanding_window
   window_size_first_pass: 365
   window_size_last_pass: 540
   n_passes: 3
   forecasting_window_size: 7
 
-
- metrics: rmse, mae
-
+metrics:
+  - rmse
+  - mae
 
 training:
 # STANDARD
@@ -19,5 +18,4 @@ training:
   seasonal_periods: 365
   use_boxcox: False
   # exog_names: None
-
 
