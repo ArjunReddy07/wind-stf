@@ -95,21 +95,26 @@ def _split_train_test(df: pd.DataFrame, cv_splits_dict: Dict, pass_id: str) -> D
 
 
 def get_split_positions(window_size_first_pass: int,
-                        window_size_last_pass: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
+                        window_size_last_pass: int,
+                        n_passes: int,
+                        forecasting_window_size: int
+                        ) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
     """
-        cv_splits_dict = {
+    Example of Cross-Validation Splits Dictionary:
+
+    cv_splits_dict = {
         'pass_1': {
-            'train_x_idx': [0, 365],
-            'train_y_idx': [0, 365],
-            'test_x_idx': [365, 465],
-            'test_y_idx': [365, 465],
+            'train_idx': [0, 365],
+            'test_idx': [365, 465],
         }
     }
-    :param n_splits:
-    :param df:
+
+    :param window_size_first_pass:
+    :param window_size_last_pass:
+    :param n_passes:
+    :param forecasting_window_size:
     :return:
     """
-
     cv_splits_dict = {}
     window_size_increment = int( (window_size_last_pass - window_size_first_pass) / (n_passes-1) )
     for p in range(n_passes):
@@ -124,8 +129,6 @@ def get_split_positions(window_size_first_pass: int,
                     window_size_first_pass + p * window_size_increment + forecasting_window_size,
                 ],
         }
-
-
     return cv_splits_dict
 
 

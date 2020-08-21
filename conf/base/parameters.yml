@@ -1,29 +1,23 @@
-evaluation:
-  expanding_window:
-    window_size_first_pass: 365
-    window_size_last_pass: 540
-    n_passes: 3
-    forecasting_window_size
+cross-validation:
+  # expanding_window
+  window_size_first_pass: 365
+  window_size_last_pass: 540
+  n_passes: 3
+  forecasting_window_size: 7
 
 
-  metrics: rmse, mae
+ metrics: rmse, mae
 
-experiments:
-  forecasting_approaches: hw-es, arima
 
 training:
 # STANDARD
 #  approach: approach-name
 #    hyperpar: hyperpar-value
-
-  hw-es:
-    trend: 'mul'
-    damped_trend: True
-    seasonal: 'mul'
-    seasonal_periods: 365
-    use_boxcox: False
-    # exog_names: None
-
-  arima:
+  trend: 'mul'
+  damped_trend: True
+  seasonal: 'mul'
+  seasonal_periods: 365
+  use_boxcox: False
+  # exog_names: None
 
 
