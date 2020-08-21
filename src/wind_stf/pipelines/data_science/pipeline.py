@@ -55,7 +55,12 @@ def create_pipeline(**kwargs):
             node(
                 func=get_split_positions,
                 name=r"Get CV Split Indexes",
-                inputs=["params:n_splits", "spatio_temporal_df"],
+                inputs=[
+                    "params:window_size_first_pass",
+                    "params:window_size_last_pass",
+                    "params:n_passes",
+                    "params:forecasting_window_size",
+                    ],
                 outputs="cv_splits_dict",
             ),
             # node(
