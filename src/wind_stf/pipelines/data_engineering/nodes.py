@@ -35,8 +35,11 @@ def aggregate_temporally(data_hourly: pd.DataFrame, target_freq: str = 'D') -> p
 
 
 def filter_districts(data_all_districts: pd.DataFrame) -> pd.DataFrame:
-    blacklist = ['DE409', 'DE40C', 'DE403',  # outliers in spatial correlogram
-                 'DE24C', 'DE266', 'DEA2C', ]  # zero installed capacity at 2015-01-01
+    blacklist = [
+        'DE409', 'DE40C', 'DE403',  # outliers in spatial correlogram
+        'DE24C', 'DE266', 'DEA2C',  # zero installed capacity at 2015-01-01
+        'DE257',  # having somehow infinity values after CF transformation
+    ]
     # TODO: ensure df_spatial includes the same set of districts as the df_temporal
     # TODO: remove districts where any single turbine represents >10% installed capacity
     data_selected_districts = data_all_districts.drop(blacklist, axis='columns')

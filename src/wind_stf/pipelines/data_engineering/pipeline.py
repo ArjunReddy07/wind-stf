@@ -64,7 +64,7 @@ def create_pipeline(**kwargs):
                     # "measurements_hourly_2010",
                     # "measurements_hourly_2011",
                     # "measurements_hourly_2012",
-                    # "measurements_hourly_2013",
+                    "measurements_hourly_2013",
                     "measurements_hourly_2014",
                     "measurements_hourly_2015",
                 ],

@@ -1,22 +1,21 @@
 cross_validation:
-  # expanding window
-  window_size_first_pass: 365
-  window_size_last_pass: 540
+  method: 'expanding window'
+  window_size_first_pass: 730
+  window_size_last_pass: 910
   n_passes: 3
   forecasting_window_size: 7
 
 metrics:
   - rmse
-  - mae
+  - mase
 
-training:
-# STANDARD
-#  approach: approach-name
-#    hyperpar: hyperpar-value
-  trend: 'mul'
+modeling:
+  approach: HW-ES
+  trend: 'additive'
   damped_trend: True
-  seasonal: 'mul'
+  seasonal: 'multiplicative'
   seasonal_periods: 365
-  use_boxcox: False
-  # exog_names: None
+  target_timeseries:
+    - 'DEF0C'
+    - 'DE111'
 

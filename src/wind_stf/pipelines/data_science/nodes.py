@@ -38,6 +38,8 @@ from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import QuantileTransformer
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 
 def _sort_col_level(df: pd.DataFrame, levelname:str ='nuts_id'):
@@ -48,6 +50,8 @@ def _sort_col_level(df: pd.DataFrame, levelname:str ='nuts_id'):
 
 def _get_districts(df: pd.DataFrame) -> set:
     return set(df.columns.get_level_values('nuts_id'))
+
+# def train_
 
 
 def build_spatiotemporal_dataset(
@@ -89,8 +93,8 @@ def _split_train_test(df: pd.DataFrame, cv_splits_dict: Dict, pass_id: str) -> D
     test_idx_end = cv_splits_dict[pass_id]['test_idx'][1]
 
     return {
-        'y_train': df.iloc[train_idx_start:train_idx_end, :],
-        'y_test': df.iloc[test_idx_start:test_idx_end, :],
+        'train': df.iloc[train_idx_start:train_idx_end, :],
+        'test': df.iloc[test_idx_start:test_idx_end, :],
     }
 
 
@@ -133,14 +137,73 @@ def get_split_positions(cv_pars: Dict) -> Dict[str, Any]:  # Dict[str, List[pd.d
     return cv_splits_dict
 
 
-def train_model(df: pd.DataFrame, cv_splits_dict: Dict[str, Any], hyperparams: Dict[str, Any]) -> Dict[str, Any]:
+def _get_last_train_idx(tss: pd.DataFrame, cv_splits_dict: dict):
+    longest_pass = list( cv_splits_dict.keys() )[-1]
+    y = _split_train_test(tss, cv_splits_dict, pass_id=longest_pass)
+    return y['train'].index[-1]
+
+
+def scale_offset_timeseries(df_spatiotemporal: pd.DataFrame, cv_splits_dict: dict, level_offset: int, target_timeseries: list) -> pd.DataFrame:
+    quantile_transformer = QuantileTransformer(
+        output_distribution='normal',
+        random_state=0
+    )
+
+    tss = df_spatiotemporal['temporal']
+
+    last_train_idx = _get_last_train_idx(tss, cv_splits_dict)
+    quantile_transformer.fit(
+        tss.loc[:last_train_idx,
+        target_timeseries
+        ]
+    )
+
+    tss_scaled = pd.DataFrame(
+        index=tss.index,
+        columns=target_timeseries,
+        data=quantile_transformer.transform(tss[target_timeseries]) + level_offset
+    )
+
+    df_spatiotemporal['temporal'] = tss_scaled
+
+    return df_spatiotemporal
+
+
+def train(df_spatiotemporal: pd.DataFrame,
+          cv_splits_dict: Dict[str, Any],
+          modeling: Dict[str, Any]) -> Dict[str, Any]:
+
+    tss_scaled = df_spatiotemporal['temporal']
+
+    model = {}
+    for pass_id in cv_splits_dict.keys():
+
+        model[pass_id] = {}
+
+        # splitting
+        y = _split_train_test(tss_scaled, cv_splits_dict, pass_id)
+
+        # training
+        for district in tss_scaled.columns:
+            model[pass_id][district] = ExponentialSmoothing(
+                y['train'][district],
+                trend=modeling['trend'],
+                seasonal=modeling['seasonal'],
+                seasonal_periods=modeling['seasonal_periods'],
+            ).fit()
+
     return {
-        'model': None,
-        'model_metadata': None,
+        'model': model,
+        'model_metadata': modeling,
     }
 
 
 def predict(model_metadata: Any, cv_splits_dict: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    pred = {}
+    pred[district][pass_id] = model[district][pass_id].predict(
+        start=y['test'].index.values[0],
+        end=y['test'].index.values[1]
+    )
     return {
         'train_y_hat': None,
         'test_y_hat': None,
