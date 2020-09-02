@@ -139,6 +139,12 @@ df_spatiotemporal:
   key: df_spatiotemporal
   layer: Model Input
 
+df_spatiotemporal_scaled:
+  type: pandas.HDFDataSet
+  filepath: data/05_model_input/df_spatiotemporal_scaled.hdf
+  key: df_spatiotemporal
+  layer: Model Input
+
 cv_splits_dict:
   type: pickle.PickleDataSet
   filepath: data/05_model_input/cv_splits_dict.pkl

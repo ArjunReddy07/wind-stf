@@ -36,6 +36,8 @@ Delete this when you start working on your own Kedro project.
 import logging
 from typing import Any, Dict, List
 
+from utils.metrics import metrics
+
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import QuantileTransformer
@@ -98,7 +100,17 @@ def _split_train_test(df: pd.DataFrame, cv_splits_dict: Dict, pass_id: str) -> D
     }
 
 
-def get_split_positions(cv_pars: Dict) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
+def _get_last_train_idx(tss: pd.DataFrame, cv_splits_dict: dict):
+    longest_pass = list( cv_splits_dict.keys() )[-1]
+    y = _split_train_test(tss, cv_splits_dict, pass_id=longest_pass)
+    return y['train'].index[-1]
+
+
+def _load_model():
+    pass
+
+
+def define_cvsplits(cv_pars: Dict) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
     """
     Example of Cross-Validation Splits Dictionary:
 
@@ -137,27 +149,30 @@ def get_split_positions(cv_pars: Dict) -> Dict[str, Any]:  # Dict[str, List[pd.d
     return cv_splits_dict
 
 
-def _get_last_train_idx(tss: pd.DataFrame, cv_splits_dict: dict):
-    longest_pass = list( cv_splits_dict.keys() )[-1]
-    y = _split_train_test(tss, cv_splits_dict, pass_id=longest_pass)
-    return y['train'].index[-1]
-
-
-def scale_offset_timeseries(df_spatiotemporal: pd.DataFrame, cv_splits_dict: dict, level_offset: int, target_timeseries: list) -> pd.DataFrame:
+def scale_timeseries(
+        df_spatiotemporal: pd.DataFrame,
+        cv_splits_dict: dict,
+        target_timeseries: list) -> dict:
     quantile_transformer = QuantileTransformer(
         output_distribution='normal',
         random_state=0
     )
 
+    # load the dataset part containing Multiple Time Series
     tss = df_spatiotemporal['temporal']
 
+    # get training dataset: based on the longest CV pass
     last_train_idx = _get_last_train_idx(tss, cv_splits_dict)
-    quantile_transformer.fit(
-        tss.loc[:last_train_idx,
-        target_timeseries
-        ]
-    )
+    tss_train = tss.loc[:last_train_idx, target_timeseries]
 
+    # generate the transformer: Quantile Transformation + Level Offset (bias)
+    quantile_transformer.fit( tss_train )
+
+    level_offset = quantile_transformer.transform(
+        tss_train[target_timeseries]
+    ).min().abs()
+
+    # apply the transformer
     tss_scaled = pd.DataFrame(
         index=tss.index,
         columns=target_timeseries,
@@ -166,7 +181,13 @@ def scale_offset_timeseries(df_spatiotemporal: pd.DataFrame, cv_splits_dict: dic
 
     df_spatiotemporal['temporal'] = tss_scaled
 
-    return df_spatiotemporal
+    return {
+        'df_spatiotemporal': df_spatiotemporal,
+        'transformation_settings': {
+            'quantile_transformer': quantile_transformer,
+            'level_offset': level_offset,
+        }
+    }
 
 
 def train(df_spatiotemporal: pd.DataFrame,
@@ -193,65 +214,61 @@ def train(df_spatiotemporal: pd.DataFrame,
             ).fit()
 
     return {
-        'model': model,
+        'model_params': model,
         'model_metadata': modeling,
     }
 
 
-def predict(model_metadata: Any, cv_splits_dict: Dict[str, Any]) -> Dict[str, np.ndarray]:
-    pred = {}
-    pred[district][pass_id] = model[district][pass_id].predict(
-        start=y['test'].index.values[0],
-        end=y['test'].index.values[1]
-    )
-    return {
-        'train_y_hat': None,
-        'test_y_hat': None,
-    }
+def _predict(model_metadata: Any, forecasting_idx, target_timeseries: list) -> Dict[str, np.ndarray]:
+    # model = _load_model(model_metadata)
+    #
+    # test_idx = cv_splits_dict['y_train']
+    #
+    # pred = {}
+    # pred_scaled = {}
+    #
+    # for pass_id in cv_splits_dict.keys():
+    #
+    #     pred_scaled[pass_id] = {}
+    #
+    #     for district in tss_scaled.columns:
+    #         # prediction
+    #         pred_scaled[pass_id][district] = model[pass_id][district].predict(
+    #             start=test_idx[0],
+    #             end=test_idx[-1]
+    #         )
+    #
+    #     # postprocessing prediction
+    #     pred[pass_id] = pd.DataFrame(
+    #         data=quantile_transformer.inverse_transform(
+    #             pd.DataFrame(pred_scaled[pass_id]) - 10
+    #         ),
+    #         columns=tss_scaled.columns,
+    #         index=test_idx,
+    #     )
+    #
+    # return {
+    #     'y_hat': None,
+    # }
+    pass
+
+def _unscale_predictions(model_metadata: Any):
+    pass
 
 
-def report_scores(scoreboard: pd.DataFrame, model_metadata: Any, train_y_hat: np.ndarray, test_y_hat: np.ndarray):
-    # TODO: use metrics from metrics.py
-    scoreboard_new = None
+def _convert_CFtokW():
+    pass
 
 
-def split_data(data: pd.DataFrame, example_test_data_ratio: float) -> Dict[str, Any]:
-    """Node for splitting the classical Iris data set into training and test
-    sets, each split into features and labels.
-    The split ratio parameter is taken from conf/project/parameters.yml.
-    The data and the parameters will be loaded and provided to your function
-    automatically when the pipeline is executed and it is time to run this node.
-    """
-    data.columns = [
-        "sepal_length",
-        "sepal_width",
-        "petal_length",
-        "petal_width",
-        "target",
-    ]
-    classes = sorted(data["target"].unique())
-    # One-hot encoding for the target variable
-    data = pd.get_dummies(data, columns=["target"], prefix="", prefix_sep="")
+def _evaluate_model(_model_metadata: Any, _cv_splits_dict: dict) -> dict:
+    pass
 
-    # Shuffle all the data
-    data = data.sample(frac=1).reset_index(drop=True)
 
-    # Split to training and testing data
-    n = data.shape[0]
-    n_test = int(n * example_test_data_ratio)
-    training_data = data.iloc[n_test:, :].reset_index(drop=True)
-    test_data = data.iloc[:n_test, :].reset_index(drop=True)
+def _update_scoreboard():
+    pass
 
-    # Split the data to features and labels
-    train_data_x = training_data.loc[:, "sepal_length":"petal_width"]
-    train_data_y = training_data[classes]
-    test_data_x = test_data.loc[:, "sepal_length":"petal_width"]
-    test_data_y = test_data[classes]
 
-    # When returning many variables, it is a good practice to give them names:
-    return dict(
-        train_x=train_data_x,
-        train_y=train_data_y,
-        test_x=test_data_x,
-        test_y=test_data_y,
-    )
+def report_scores(scoreboard: pd.DataFrame, model_metadata: Any, cv_splits_dict: dict):
+    # TODO: use metrics from utils/metrics.py
+    model_scores = _evaluate_model(model_metadata, cv_splits_dict)
+    _update_scoreboard(model_scores)

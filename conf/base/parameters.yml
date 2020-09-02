@@ -1,3 +1,7 @@
+target_timeseries:
+  - 'DEF0C'
+  - 'DE111'
+
 cross_validation:
   method: 'expanding window'
   window_size_first_pass: 730
@@ -5,9 +9,6 @@ cross_validation:
   n_passes: 3
   forecasting_window_size: 7
 
-metrics:
-  - rmse
-  - mase
 
 modeling:
   approach: HW-ES
@@ -15,7 +16,6 @@ modeling:
   damped_trend: True
   seasonal: 'multiplicative'
   seasonal_periods: 365
-  target_timeseries:
-    - 'DEF0C'
-    - 'DE111'
+
+
 
