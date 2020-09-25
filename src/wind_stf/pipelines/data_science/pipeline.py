@@ -62,7 +62,10 @@ def create_pipeline(**kwargs):
                 func=scale_timeseries,
                 name=r"Scale Train Data",  # Scale Training Timeseries
                 inputs=["df_spatiotemporal", "cv_splits_dict", "params:target_timeseries"],
-                outputs=["df_spatiotemporal_preprocessed", "transformation_parameters"],
+                outputs={
+                    "df_spatiotemporal_preprocessed": "df_spatiotemporal_preprocessed",
+                    "transformation_parameters": "transformation_parameters"
+                },
             ),
             node(
                 func=train,

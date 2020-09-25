@@ -1,7 +1,3 @@
-target_timeseries:
-  - 'DEF0C'
-  - 'DE111'
-
 cross_validation:
   method: 'expanding window'
   window_size_first_pass: 730
@@ -12,10 +8,19 @@ cross_validation:
 
 modeling:
   approach: HW-ES
-  trend: 'additive'
-  damped_trend: True
-  seasonal: 'multiplicative'
-  seasonal_periods: 365
+  hyperpars:
+    trend: 'additive'
+    damped_trend: True
+    seasonal: 'multiplicative'
+    seasonal_periods: 365
+
+target_timeseries:
+  - 'DEF0C'
+  - 'DE111'
+
+evaluation:
+  - MAE
+  - RMSE
 
 
 

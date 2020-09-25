@@ -152,12 +152,7 @@ def define_cvsplits(cv_pars: Dict) -> Dict[str, Any]:  # Dict[str, List[pd.date_
 def scale_timeseries(
         df_spatiotemporal: pd.DataFrame,
         cv_splits_dict: dict,
-        target_timeseries: list) -> dict:
-    quantile_transformer = QuantileTransformer(
-        output_distribution='normal',
-        random_state=0
-    )
-
+        target_timeseries: list) -> Dict[str, Any]:
     # load the dataset part containing Multiple Time Series
     tss = df_spatiotemporal['temporal']
 
@@ -166,11 +161,18 @@ def scale_timeseries(
     tss_train = tss.loc[:last_train_idx, target_timeseries]
 
     # generate the transformer: Quantile Transformation + Level Offset (bias)
+    quantile_transformer = QuantileTransformer(
+        output_distribution='normal',
+        random_state=0
+    )
+
     quantile_transformer.fit( tss_train )
 
-    level_offset = quantile_transformer.transform(
-        tss_train[target_timeseries]
-    ).min().abs()
+    level_offset = abs(
+        quantile_transformer.transform(
+            tss_train[target_timeseries]
+        ).min()
+    )
 
     # apply the transformer
     tss_scaled = pd.DataFrame(
@@ -182,8 +184,8 @@ def scale_timeseries(
     df_spatiotemporal['temporal'] = tss_scaled
 
     return {
-        'df_spatiotemporal': df_spatiotemporal,
-        'transformation_settings': {
+        'df_spatiotemporal_preprocessed': df_spatiotemporal,
+        'transformation_parameters': {
             'quantile_transformer': quantile_transformer,
             'level_offset': level_offset,
         }

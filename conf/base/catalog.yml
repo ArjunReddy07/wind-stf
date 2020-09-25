@@ -139,9 +139,9 @@ df_spatiotemporal:
   key: df_spatiotemporal
   layer: Model Input
 
-df_spatiotemporal_scaled:
+df_spatiotemporal_preprocessed:
   type: pandas.HDFDataSet
-  filepath: data/05_model_input/df_spatiotemporal_scaled.hdf
+  filepath: data/05_model_input/df_spatiotemporal_preprocessed.hdf
   key: df_spatiotemporal
   layer: Model Input
 
