@@ -139,6 +139,28 @@ def _load_model():
     pass
 
 
+def scale(df_infer: pd.DataFrame, modeling: List[str]) -> List[Any]:
+    preprocessing = modeling['preprocessing']
+
+    # instantiate pipeline with steps defined in preprocessing params
+    scaler = make_pipeline(
+        *[REGISTERED_TRANSFORMERS[step] for step in preprocessing]
+    )
+
+    scaler = scaler.fit(
+        df_infer
+    )
+
+    # transformation output is a numpy array
+    df_infer_scaled = pd.DataFrame(
+        index=df_infer.index,
+        columns=df_infer.columns,
+        data=scaler.transform( df_infer )
+    )
+
+    return [df_infer_scaled, scaler]
+
+
 def define_cvsplits(cv_params: Dict[str, Any], df_infer_scaled: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
     """
     :param window_size_first_pass:uz
@@ -185,28 +207,6 @@ def define_cvsplits(cv_params: Dict[str, Any], df_infer_scaled: pd.DataFrame) ->
         NotImplementedError(f'CV method not recognized: {cv_method}')
 
     return cv_splits_dict
-
-
-def scale(df_infer: pd.DataFrame, modeling: List[str]) -> List[Any]:
-    preprocessing = modeling['preprocessing']
-
-    # instantiate pipeline with steps defined in preprocessing params
-    scaler = make_pipeline(
-        *[REGISTERED_TRANSFORMERS[step] for step in preprocessing]
-    )
-
-    scaler = scaler.fit(
-        df_infer
-    )
-
-    # transformation output is a numpy array
-    df_infer_scaled = pd.DataFrame(
-        index=df_infer.index,
-        columns=df_infer.columns,
-        data=scaler.transform( df_infer )
-    )
-
-    return [df_infer_scaled, scaler]
 
 
 def train(df: pd.DataFrame,
