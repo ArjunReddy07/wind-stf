@@ -58,12 +58,12 @@ def create_pipeline(**kwargs):
                 inputs=['df_infer', 'params:modeling'],
                 outputs=['df_infer_scaled', 'scaler'],
             ),
-            # node(
-            #     func=define_cvsplits,
-            #     name=r'Define CV Splits',
-            #     inputs='params:cv',
-            #     outputs='cv_splits_dict',
-            # ),
+            node(
+                func=define_cvsplits,
+                name=r'Define CV Splits',
+                inputs=['params:cv', 'df_infer_scaled'],
+                outputs='cv_splits_dict',
+            ),
 
             # node(
             #     func=train,

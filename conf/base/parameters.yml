@@ -26,7 +26,7 @@
 cv:
     method: expanding window
     window_size_first_pass: 730
-    window_size_last_pass: 910 # complete_train_window
+    window_size_last_pass: 'complete inference window'
     n_passes: 3
     forecasting_window_size: 7
 

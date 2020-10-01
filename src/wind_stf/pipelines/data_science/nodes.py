@@ -139,8 +139,14 @@ def _load_model():
     pass
 
 
-def define_cvsplits(kwargs) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
+def define_cvsplits(cv_params: Dict[str, Any], df_infer_scaled: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
     """
+    :param window_size_first_pass:uz
+    :param window_size_last_pass:
+    :param n_passes:
+    :param forecasting_window_size:
+    :return: cv_splits_dict
+
     Example of Cross-Validation Splits Dictionary:
 
     cv_splits_dict = {
@@ -149,21 +155,15 @@ def define_cvsplits(kwargs) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, 
             'test_idx': [365, 465],
         }
     }
-
-    :param window_size_first_pass:
-    :param window_size_last_pass:
-    :param n_passes:
-    :param forecasting_window_size:
-    :return:
     """
 
-    cv_method = kwargs.get('method')
-
-    if cv_method == 'expanding window':
-        window_size_first_pass = kwargs.get('window_size_first_pass')
-        window_size_last_pass = kwargs.get('window_size_last_pass')
-        n_passes = kwargs.get('n_passes')
-        forecasting_window_size = kwargs.get('forecasting_window_size')
+    if cv_params.get('method') == 'expanding window':
+        window_size_first_pass = cv_params.get('window_size_first_pass')
+        window_size_last_pass = cv_params.get('window_size_last_pass')
+        if window_size_last_pass == 'complete inference window':
+            window_size_last_pass = len(df_infer_scaled)
+        n_passes = cv_params.get('n_passes')
+        forecasting_window_size = cv_params.get('forecasting_window_size')
 
         cv_splits_dict = {}
         window_size_increment = int((window_size_last_pass - window_size_first_pass) / (n_passes - 1))
@@ -181,6 +181,7 @@ def define_cvsplits(kwargs) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, 
             }
     else:
         cv_splits_dict = None
+        cv_method = cv_params.get('method')
         NotImplementedError(f'CV method not recognized: {cv_method}')
 
     return cv_splits_dict
