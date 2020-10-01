@@ -60,19 +60,18 @@ def create_pipeline(**kwargs):
             ),
             node(
                 func=define_cvsplits,
-                name=r'Define CV Splits',
+                name=r'Define CV Splits Positions',
                 inputs=['params:cv', 'df_infer_scaled'],
-                outputs='cv_splits_dict',
+                outputs='splits_positions',
             ),
-
-            # node(
-            #     func=train,
-            #     name=r'Train Model',
-            #     inputs=['df_spatiotemporal_preprocessed',
-            #             'cv_splits_dict',
-            #             'params:modeling'],
-            #     outputs='model',
-            # ),
+            node(
+                func=train,
+                name=r'Train',
+                inputs=['df_infer_scaled',
+                        'params:modeling',
+                        'splits_positions'],
+                outputs='model',
+            ),
             # # node(
             # #     func=predict,
             # #     name=r'Predict',

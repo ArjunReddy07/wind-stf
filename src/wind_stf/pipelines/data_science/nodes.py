@@ -43,6 +43,7 @@ import pandas as pd
 from sklearn.preprocessing import QuantileTransformer
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from src.utils.preprocessing import MakeStrictlyPositive
+from src.utils.modeling import ForecastingModel
 from sklearn.pipeline import make_pipeline
 
 
@@ -65,19 +66,19 @@ def _get_districts(df: pd.DataFrame) -> set:
     return set(df.columns.get_level_values('nuts_id'))
 
 
-def _split_train_test(df: pd.DataFrame, train_window, test_window):
+def _split_train_eval(df: pd.DataFrame, train_window, eval_window):
     train = slice(
         train_window['start'],
         train_window['end']
     )
 
-    test = slice(
-        test_window['start'],
-        test_window['end']
+    eval = slice(
+        eval_window['start'],
+        eval_window['end']
     )
     return {
         'df_train': df[train],
-        'df_test': df[test]
+        'df_eval': df[eval]
     }
 
 
@@ -179,13 +180,13 @@ def define_cvsplits(cv_params: Dict[str, Any], df_infer_scaled: pd.DataFrame) ->
     }
     """
 
-    if cv_params.get('method') == 'expanding window':
-        window_size_first_pass = cv_params.get('window_size_first_pass')
-        window_size_last_pass = cv_params.get('window_size_last_pass')
+    if cv_params['method'] == 'expanding window':
+        window_size_first_pass = cv_params['window_size_first_pass']
+        window_size_last_pass = cv_params['window_size_last_pass']
         if window_size_last_pass == 'complete inference window':
             window_size_last_pass = len(df_infer_scaled)
-        n_passes = cv_params.get('n_passes')
-        forecasting_window_size = cv_params.get('forecasting_window_size')
+        n_passes = cv_params['n_passes']
+        forecasting_window_size = cv_params['forecasting_window_size']
 
         cv_splits_dict = {}
         window_size_increment = int((window_size_last_pass - window_size_first_pass) / (n_passes - 1))
@@ -203,43 +204,29 @@ def define_cvsplits(cv_params: Dict[str, Any], df_infer_scaled: pd.DataFrame) ->
             }
     else:
         cv_splits_dict = None
-        cv_method = cv_params.get('method')
+        cv_method = cv_params['method']
         NotImplementedError(f'CV method not recognized: {cv_method}')
 
     return cv_splits_dict
 
 
-def train(df: pd.DataFrame,
-          cv_splits_dict: Dict[str, Any],
-          modeling: Dict[str, Any]
-          ) -> Dict[str, Any]:
-
-    hyperpars = modeling['hyperpars']
-    targets = modeling['targets']
-    mode = modeling['mode']
-
-    if mode == 'temporal':
-        df = df['temporal']
-
-    # ignore all vars we don't want to model
-    df = df[targets]
-
+def train(df_train_preprocessed: pd.DataFrame,
+          modeling: Dict[str, Any],
+          splits_positions: Dict[str, Any]) -> Dict[str, Any]:
     model = {}
-    for pass_id in cv_splits_dict.keys():
-
-        model[pass_id] = {}
+    for pass_id in splits_positions.keys():
 
         # splitting
-        y = _split_train_test(df, cv_splits_dict, pass_id)
+        y = _split_train_eval(df_train_preprocessed, splits_positions['train'])  # cv_splits_dict[pass_id]
 
         # training
-        for district in df.columns:
-            model[pass_id][district] = ExponentialSmoothing(
-                y['train'][district],
-                **hyperpars,
-            ).fit()
+        model[pass_id] = ForecastingModel(y['train'], modeling).fit()
 
-    return model
+    longest_pass_id = pass_id
+    return {
+        'intermediate_models': model,
+        'model': model[longest_pass_id]
+    }
 
 
 def _predict(model_metadata: Any, forecasting_idx, targets: list) -> Dict[str, np.ndarray]:
