@@ -133,17 +133,30 @@ capacity_factors_daily_2000to2015:
   key: df_temporal
   layer: Feature
 
-df_spatiotemporal:
+df_infer:
   type: pandas.HDFDataSet
-  filepath: data/05_model_input/df_spatiotemporal.hdf
+  filepath: data/05_model_input/df_infer.hdf
   key: df_spatiotemporal
   layer: Model Input
 
-df_spatiotemporal_preprocessed:
+df_infer_scaled:
   type: pandas.HDFDataSet
-  filepath: data/05_model_input/df_spatiotemporal_preprocessed.hdf
+  filepath: data/05_model_input/df_infer_scaled.hdf
   key: df_spatiotemporal
   layer: Model Input
+
+scaler:
+  type: pickle.PickleDataSet
+  filepath: data/05_model_input/scaler.pkl
+  versioned: true
+  layer: Model Input
+
+df_test:
+  type: pandas.HDFDataSet
+  filepath: data/05_model_input/df_infer_scaled.hdf
+  key: df_spatiotemporal
+  layer: Reporting
+
 
 cv_splits_dict:
   type: pickle.PickleDataSet

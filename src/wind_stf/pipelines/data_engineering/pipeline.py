@@ -82,12 +82,12 @@ def create_pipeline(**kwargs):
                 inputs="measurements_daily_2000to2015",
                 outputs="measurements_daily_2000to2015_filtered",
             ),
-            node(
-                func=build_power_centroids_mts,
-                name="Get Power Centroids Positions TSs",
-                inputs="sensors",
-                outputs="centroids_positions",
-            ),
+            # node(
+            #     func=build_power_centroids_mts,
+            #     name="Get Power Centroids Positions TSs",
+            #     inputs="sensors",
+            #     outputs="centroids_positions",
+            # ),
             node(
                 func=build_power_installed_mts,
                 name="Get Power Installed TSs",

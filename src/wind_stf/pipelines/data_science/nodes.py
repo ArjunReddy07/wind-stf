@@ -34,7 +34,7 @@ Delete this when you start working on your own Kedro project.
 # pylint: disable=invalid-name
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from utils.metrics import metrics
 
@@ -42,6 +42,17 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import QuantileTransformer
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from src.utils.preprocessing import MakeStrictlyPositive
+from sklearn.pipeline import make_pipeline
+
+
+REGISTERED_TRANSFORMERS = {
+    'get_quantile_equivalent_normal_dist': QuantileTransformer(
+                                                output_distribution='normal',
+                                                random_state=0,
+                                            ),
+    'make_strictly_positive': MakeStrictlyPositive(),
+}
 
 
 def _sort_col_level(df: pd.DataFrame, levelname:str ='nuts_id'):
@@ -53,7 +64,38 @@ def _sort_col_level(df: pd.DataFrame, levelname:str ='nuts_id'):
 def _get_districts(df: pd.DataFrame) -> set:
     return set(df.columns.get_level_values('nuts_id'))
 
-# def train_
+
+def _split_train_test(df: pd.DataFrame, train_window, test_window):
+    train = slice(
+        train_window['start'],
+        train_window['end']
+    )
+
+    test = slice(
+        test_window['start'],
+        test_window['end']
+    )
+    return {
+        'df_train': df[train],
+        'df_test': df[test]
+    }
+
+
+def split_modinfer_test(df: pd.DataFrame, modeling: dict) -> Tuple[Any, Any]:
+    infer_window = modeling['model_inference_window']
+    test_window = modeling['test_window']
+
+    infer = slice(
+        infer_window['start'],
+        infer_window['end']
+    )
+
+    test = slice(
+        test_window['start'],
+        test_window['end']
+    )
+
+    return df[infer], df[test]
 
 
 def build_spatiotemporal_dataset(
@@ -87,19 +129,6 @@ def build_spatiotemporal_dataset(
     return df_spatiotemporal
 
 
-def _split_train_test(df: pd.DataFrame, cv_splits_dict: Dict, pass_id: str) -> Dict[str, Any]:
-    train_idx_start = cv_splits_dict[pass_id]['train_idx'][0]
-    train_idx_end = cv_splits_dict[pass_id]['train_idx'][1]
-
-    test_idx_start = cv_splits_dict[pass_id]['test_idx'][0]
-    test_idx_end = cv_splits_dict[pass_id]['test_idx'][1]
-
-    return {
-        'train': df.iloc[train_idx_start:train_idx_end, :],
-        'test': df.iloc[test_idx_start:test_idx_end, :],
-    }
-
-
 def _get_last_train_idx(tss: pd.DataFrame, cv_splits_dict: dict):
     longest_pass = list( cv_splits_dict.keys() )[-1]
     y = _split_train_test(tss, cv_splits_dict, pass_id=longest_pass)
@@ -110,7 +139,7 @@ def _load_model():
     pass
 
 
-def define_cvsplits(cv_pars: Dict) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
+def define_cvsplits(kwargs) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
     """
     Example of Cross-Validation Splits Dictionary:
 
@@ -127,16 +156,20 @@ def define_cvsplits(cv_pars: Dict) -> Dict[str, Any]:  # Dict[str, List[pd.date_
     :param forecasting_window_size:
     :return:
     """
-    window_size_first_pass = cv_pars['window_size_first_pass']
-    window_size_last_pass = cv_pars['window_size_last_pass']
-    n_passes = cv_pars['n_passes']
-    forecasting_window_size = cv_pars['forecasting_window_size']
 
-    cv_splits_dict = {}
-    window_size_increment = int( (window_size_last_pass - window_size_first_pass) / (n_passes-1) )
-    for p in range(n_passes):
-        pass_id = 'pass_' + str(p + 1)
-        cv_splits_dict[pass_id] = {
+    cv_method = kwargs.get('method')
+
+    if cv_method == 'expanding window':
+        window_size_first_pass = kwargs.get('window_size_first_pass')
+        window_size_last_pass = kwargs.get('window_size_last_pass')
+        n_passes = kwargs.get('n_passes')
+        forecasting_window_size = kwargs.get('forecasting_window_size')
+
+        cv_splits_dict = {}
+        window_size_increment = int((window_size_last_pass - window_size_first_pass) / (n_passes - 1))
+        for p in range(n_passes):
+            pass_id = 'pass_' + str(p + 1)
+            cv_splits_dict[pass_id] = {
                 'train_idx': [
                     0,
                     window_size_first_pass + p * window_size_increment
@@ -145,58 +178,50 @@ def define_cvsplits(cv_pars: Dict) -> Dict[str, Any]:  # Dict[str, List[pd.date_
                     window_size_first_pass + p * window_size_increment,
                     window_size_first_pass + p * window_size_increment + forecasting_window_size,
                 ],
-        }
+            }
+    else:
+        cv_splits_dict = None
+        NotImplementedError(f'CV method not recognized: {cv_method}')
+
     return cv_splits_dict
 
 
-def scale_timeseries(
-        df_spatiotemporal: pd.DataFrame,
-        cv_splits_dict: dict,
-        target_timeseries: list) -> Dict[str, Any]:
-    # load the dataset part containing Multiple Time Series
-    tss = df_spatiotemporal['temporal']
+def scale(df_infer: pd.DataFrame, modeling: List[str]) -> List[Any]:
+    preprocessing = modeling['preprocessing']
 
-    # get training dataset: based on the longest CV pass
-    last_train_idx = _get_last_train_idx(tss, cv_splits_dict)
-    tss_train = tss.loc[:last_train_idx, target_timeseries]
-
-    # generate the transformer: Quantile Transformation + Level Offset (bias)
-    quantile_transformer = QuantileTransformer(
-        output_distribution='normal',
-        random_state=0
+    # instantiate pipeline with steps defined in preprocessing params
+    scaler = make_pipeline(
+        *[REGISTERED_TRANSFORMERS[step] for step in preprocessing]
     )
 
-    quantile_transformer.fit( tss_train )
-
-    level_offset = abs(
-        quantile_transformer.transform(
-            tss_train[target_timeseries]
-        ).min()
+    scaler = scaler.fit(
+        df_infer
     )
 
-    # apply the transformer
-    tss_scaled = pd.DataFrame(
-        index=tss.index,
-        columns=target_timeseries,
-        data=quantile_transformer.transform(tss[target_timeseries]) + level_offset
+    # transformation output is a numpy array
+    df_infer_scaled = pd.DataFrame(
+        index=df_infer.index,
+        columns=df_infer.columns,
+        data=scaler.transform( df_infer )
     )
 
-    df_spatiotemporal['temporal'] = tss_scaled
-
-    return {
-        'df_spatiotemporal_preprocessed': df_spatiotemporal,
-        'transformation_parameters': {
-            'quantile_transformer': quantile_transformer,
-            'level_offset': level_offset,
-        }
-    }
+    return [df_infer_scaled, scaler]
 
 
-def train(df_spatiotemporal: pd.DataFrame,
+def train(df: pd.DataFrame,
           cv_splits_dict: Dict[str, Any],
-          modeling: Dict[str, Any]) -> Dict[str, Any]:
+          modeling: Dict[str, Any]
+          ) -> Dict[str, Any]:
 
-    tss_scaled = df_spatiotemporal['temporal']
+    hyperpars = modeling['hyperpars']
+    targets = modeling['targets']
+    mode = modeling['mode']
+
+    if mode == 'temporal':
+        df = df['temporal']
+
+    # ignore all vars we don't want to model
+    df = df[targets]
 
     model = {}
     for pass_id in cv_splits_dict.keys():
@@ -204,24 +229,19 @@ def train(df_spatiotemporal: pd.DataFrame,
         model[pass_id] = {}
 
         # splitting
-        y = _split_train_test(tss_scaled, cv_splits_dict, pass_id)
+        y = _split_train_test(df, cv_splits_dict, pass_id)
 
         # training
-        for district in tss_scaled.columns:
+        for district in df.columns:
             model[pass_id][district] = ExponentialSmoothing(
                 y['train'][district],
-                trend=modeling['trend'],
-                seasonal=modeling['seasonal'],
-                seasonal_periods=modeling['seasonal_periods'],
+                **hyperpars,
             ).fit()
 
-    return {
-        'model_params': model,
-        'model_metadata': modeling,
-    }
+    return model
 
 
-def _predict(model_metadata: Any, forecasting_idx, target_timeseries: list) -> Dict[str, np.ndarray]:
+def _predict(model_metadata: Any, forecasting_idx, targets: list) -> Dict[str, np.ndarray]:
     # model = _load_model(model_metadata)
     #
     # test_idx = cv_splits_dict['y_train']
@@ -253,6 +273,7 @@ def _predict(model_metadata: Any, forecasting_idx, target_timeseries: list) -> D
     #     'y_hat': None,
     # }
     pass
+
 
 def _unscale_predictions(model_metadata: Any):
     pass

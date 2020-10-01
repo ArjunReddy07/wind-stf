@@ -35,9 +35,9 @@ Delete this when you start working on your own Kedro project.
 from kedro.pipeline import Pipeline, node
 
 from .nodes import (
-    build_spatiotemporal_dataset,
+    split_modinfer_test,
     define_cvsplits,
-    scale_timeseries,
+    scale,
     train,
     report_scores,
 )
@@ -45,45 +45,45 @@ from .nodes import (
 
 def create_pipeline(**kwargs):
     return Pipeline(
-        [
+        {
             node(
-                func=build_spatiotemporal_dataset,
-                name=r"Build Spatio-Temporal Dataset",
-                inputs=["centroids_positions", "capacity_factors_daily_2000to2015"],
-                outputs="df_spatiotemporal",
+                func=split_modinfer_test,
+                name=r'Split Inference-Test',
+                inputs=['capacity_factors_daily_2000to2015', 'params:modeling'],
+                outputs=['df_infer', 'df_test'],
             ),
             node(
-                func=define_cvsplits,
-                name=r"Define CV Splits",
-                inputs="params:cross_validation",
-                outputs="cv_splits_dict",
-            ),
-            node(
-                func=scale_timeseries,
-                name=r"Scale Train Data",  # Scale Training Timeseries
-                inputs=["df_spatiotemporal", "cv_splits_dict", "params:target_timeseries"],
-                outputs={
-                    "df_spatiotemporal_preprocessed": "df_spatiotemporal_preprocessed",
-                    "transformation_parameters": "transformation_parameters"
-                },
-            ),
-            node(
-                func=train,
-                name=r"Train Model",
-                inputs=["df_spatiotemporal_preprocessed", "cv_splits_dict", "params:modeling"],
-                outputs=["model_params", "model_metadata"],
+                func=scale,
+                name=r'Scale',
+                inputs=['df_infer', 'params:modeling'],
+                outputs=['df_infer_scaled', 'scaler'],
             ),
             # node(
-            #     func=predict,
-            #     name=r"Predict",
-            #     inputs=["df_spatiotemporal", "cv_splits_dict", "transformation_parameters"],
-            #     outputs=["train_y_hat", "test_y_hat"],
+            #     func=define_cvsplits,
+            #     name=r'Define CV Splits',
+            #     inputs='params:cv',
+            #     outputs='cv_splits_dict',
             # ),
-            node(
-                func=report_scores,
-                name=r"Report Scores",
-                inputs=["scoreboard", "model_metadata", "cv_splits_dict"],
-                outputs=None,  # updates scoreboard
-            ),
-        ]
+
+            # node(
+            #     func=train,
+            #     name=r'Train Model',
+            #     inputs=['df_spatiotemporal_preprocessed',
+            #             'cv_splits_dict',
+            #             'params:modeling'],
+            #     outputs='model',
+            # ),
+            # # node(
+            # #     func=predict,
+            # #     name=r'Predict',
+            # #     inputs=['df_spatiotemporal', 'cv_splits_dict', 'transformation_parameters'],
+            # #     outputs=['train_y_hat', 'test_y_hat'],
+            # # ),
+            # node(
+            #     func=report_scores,
+            #     name=r'Report Scores',
+            #     inputs=['scoreboard', 'model_metadata', 'cv_splits_dict'],
+            #     outputs=None,  # updates scoreboard
+            # ),
+        }
     )

@@ -1,26 +1,58 @@
-cross_validation:
-  method: 'expanding window'
-  window_size_first_pass: 730
-  window_size_last_pass: 910
-  n_passes: 3
-  forecasting_window_size: 7
+#cross_validation:
+#  method: expanding window
+#  window_size_first_pass: 730
+#  window_size_last_pass: 910
+#  n_passes: 3
+#  forecasting_window_size: 7
+
+
+# modeling:
+#  mode: temporal
+#  approach: HW-ES
+#  hyperpars:
+#    trend: additive
+#    seasonal: multiplicative
+#    seasonal_periods: 365
+#  targets:
+#    - DEF0C
+#    - DE111
+#
+#
+#evaluation:
+#  - MAE
+#  - RMSE
+
+
+cv:
+    method: expanding window
+    window_size_first_pass: 730
+    window_size_last_pass: 910 # complete_train_window
+    n_passes: 3
+    forecasting_window_size: 7
 
 
 modeling:
   approach: HW-ES
+  mode: districtwise
+  model_inference_window:
+      start: 2013-01-01
+      end: 2015-06-22
+  test_window:
+      start: 2015-06-23
+      end: 2015-06-29
+  preprocessing:
+      - get_quantile_equivalent_normal_dist
+      - make_strictly_positive
   hyperpars:
-    trend: 'additive'
-    damped_trend: True
-    seasonal: 'multiplicative'
-    seasonal_periods: 365
+      trend: additive
+      seasonal: multiplicative
+      seasonal_periods: 365
+  targets:
+      - DEF0C
+      - DE111
 
-target_timeseries:
-  - 'DEF0C'
-  - 'DE111'
 
 evaluation:
   - MAE
   - RMSE
-
-
 

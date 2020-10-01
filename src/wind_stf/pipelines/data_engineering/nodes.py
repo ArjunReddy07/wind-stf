@@ -58,10 +58,10 @@ def convert_kw_to_capfactor(
     capfactors_mts_filled = capfactors_mts.fillna(value=0.0)
 
     # assign names for levels in (1) index & (2) columns, for compatibility with spatial data later on
-    capfactors_mts_filled.columns = pd.MultiIndex.from_product(
-        [capfactors_mts_filled.columns, ['power']],
-        names=['nuts_id', 'var']
-    )
+    # capfactors_mts_filled.columns = pd.MultiIndex.from_product(
+    #     [capfactors_mts_filled.columns, ['power']],
+    #     names=['nuts_id', 'var']
+    # )
     capfactors_mts_filled.index.rename('date', inplace=True)
 
     return capfactors_mts_filled
@@ -124,4 +124,11 @@ def build_power_centroids_mts(sensors: pd.DataFrame) -> pd.DataFrame:
     # fill remaining NaN entries
     power_centroids_mts = power_centroids_mts.ffill().bfill()
 
+    # # simplify dataframe
+    # districts = list(power_centroids_mts.columns.get_level_values(level=0))
+    #
+    # power_centroids_mts = pd.DataFrame(
+    #     data={d: list(map(tuple, power_centroids_mts[d][['lat', 'lon']].values)) for d in districts},
+    #     index=power_centroids_mts.index,
+    # )
     return power_centroids_mts
