@@ -40,20 +40,9 @@ from utils.metrics import metrics
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import QuantileTransformer
-from statsmodels.tsa.holtwinters import ExponentialSmoothing
-from src.utils.preprocessing import MakeStrictlyPositive
+from src.utils.preprocessing import registered_transformers
 from src.utils.modeling import ForecastingModel
 from sklearn.pipeline import make_pipeline
-
-
-REGISTERED_TRANSFORMERS = {
-    'get_quantile_equivalent_normal_dist': QuantileTransformer(
-                                                output_distribution='normal',
-                                                random_state=0,
-                                            ),
-    'make_strictly_positive': MakeStrictlyPositive(),
-}
 
 
 def _sort_col_level(df: pd.DataFrame, levelname:str ='nuts_id'):
@@ -145,7 +134,7 @@ def scale(df_infer: pd.DataFrame, modeling: List[str]) -> List[Any]:
 
     # instantiate pipeline with steps defined in preprocessing params
     scaler = make_pipeline(
-        *[REGISTERED_TRANSFORMERS[step] for step in preprocessing]
+        *[registered_transformers[step] for step in preprocessing]
     )
 
     scaler = scaler.fit(
@@ -162,8 +151,9 @@ def scale(df_infer: pd.DataFrame, modeling: List[str]) -> List[Any]:
     return [df_infer_scaled, scaler]
 
 
-def define_cvsplits(cv_params: Dict[str, Any], df_infer_scaled: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
+def define_cvsplits(cv_params: Dict[str, Any], df: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
     """
+    :param df:
     :param window_size_first_pass:uz
     :param window_size_last_pass:
     :param n_passes:
@@ -179,12 +169,13 @@ def define_cvsplits(cv_params: Dict[str, Any], df_infer_scaled: pd.DataFrame) ->
         }
     }
     """
+    cv_method = cv_params['method']
 
-    if cv_params['method'] == 'expanding window':
+    if cv_method == 'expanding window':
         window_size_first_pass = cv_params['window_size_first_pass']
         window_size_last_pass = cv_params['window_size_last_pass']
         if window_size_last_pass == 'complete inference window':
-            window_size_last_pass = len(df_infer_scaled)
+            window_size_last_pass = len(df)
         n_passes = cv_params['n_passes']
         forecasting_window_size = cv_params['forecasting_window_size']
 
@@ -193,31 +184,35 @@ def define_cvsplits(cv_params: Dict[str, Any], df_infer_scaled: pd.DataFrame) ->
         for p in range(n_passes):
             pass_id = 'pass_' + str(p + 1)
             cv_splits_dict[pass_id] = {
-                'train_idx': [
-                    0,
-                    window_size_first_pass + p * window_size_increment
-                ],
-                'test_idx': [
-                    window_size_first_pass + p * window_size_increment,
-                    window_size_first_pass + p * window_size_increment + forecasting_window_size,
-                ],
+                'train': slice(
+                    df.index[0],
+                    df.index[ window_size_first_pass + p * window_size_increment ]
+                ),
+                'val': slice(
+                    df.index[ window_size_first_pass + p * window_size_increment ],
+                    df.index[ window_size_first_pass + p * window_size_increment + forecasting_window_size ]
+                ),
             }
     else:
         cv_splits_dict = None
-        cv_method = cv_params['method']
         NotImplementedError(f'CV method not recognized: {cv_method}')
 
     return cv_splits_dict
 
 
-def train(df_train_preprocessed: pd.DataFrame,
+def train(df: pd.DataFrame,
           modeling: Dict[str, Any],
           splits_positions: Dict[str, Any]) -> Dict[str, Any]:
     model = {}
+
+    # ignore all vars we don't want to model
+    targets = modeling['targets']
+    df = df[targets]
+
     for pass_id in splits_positions.keys():
 
         # splitting
-        y = _split_train_eval(df_train_preprocessed, splits_positions['train'])  # cv_splits_dict[pass_id]
+        y = _split_train_eval(df, splits_positions['train'])  # cv_splits_dict[pass_id]
 
         # training
         model[pass_id] = ForecastingModel(y['train'], modeling).fit()

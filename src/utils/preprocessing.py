@@ -1,4 +1,5 @@
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import QuantileTransformer
 
 
 class MakeStrictlyPositive(TransformerMixin, BaseEstimator):
@@ -16,3 +17,12 @@ class MakeStrictlyPositive(TransformerMixin, BaseEstimator):
 
     def inverse_transform(self, X, y=None):
         return X - abs(self.offset_) - 1e-08
+
+
+registered_transformers = {
+    'get_quantile_equivalent_normal_dist': QuantileTransformer(
+                                                output_distribution='normal',
+                                                random_state=0,
+                                            ),
+    'make_strictly_positive': MakeStrictlyPositive(),
+}
