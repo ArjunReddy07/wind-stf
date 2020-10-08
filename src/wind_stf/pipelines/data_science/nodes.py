@@ -151,7 +151,7 @@ def scale(df_infer: pd.DataFrame, modeling: List[str]) -> List[Any]:
     return [df_infer_scaled, scaler]
 
 
-def define_cvsplits(cv_params: Dict[str, Any], df: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
+def define_cvsplits(cv_params: Dict[str, Any], df_infer: pd.DataFrame) -> Dict[str, Any]:  # Dict[str, List[pd.date_range, List[str]]]:
     """
     :param df:
     :param window_size_first_pass:uz
@@ -170,34 +170,36 @@ def define_cvsplits(cv_params: Dict[str, Any], df: pd.DataFrame) -> Dict[str, An
     }
     """
     cv_method = cv_params['method']
+    n_passes = cv_params['n_passes']
+    relsize_shortest_train_window = cv_params['relsize_shortest_train_window']
+    size_forecasting_window = cv_params['size_forecast_window']
+    steps_ahead = cv_params['steps_ahead']
 
     if cv_method == 'expanding window':
-        window_size_first_pass = cv_params['window_size_first_pass']
-        window_size_last_pass = cv_params['window_size_last_pass']
-        if window_size_last_pass == 'complete inference window':
-            window_size_last_pass = len(df)
-        n_passes = cv_params['n_passes']
-        forecasting_window_size = cv_params['forecasting_window_size']
+        cv_splits = {}
 
-        cv_splits_dict = {}
-        window_size_increment = int((window_size_last_pass - window_size_first_pass) / (n_passes - 1))
+        # max train size so that train  + gap (steps_ahead) + val still fit in inference data
+        relsize_longest_train_window = 1 - ((steps_ahead - 1) + size_forecasting_window) / len(df_infer)
+
+        window_relsize = np.linspace(
+            start=relsize_shortest_train_window,
+            stop=relsize_longest_train_window,
+            num=n_passes
+        )
+
         for p in range(n_passes):
-            pass_id = 'pass_' + str(p + 1)
-            cv_splits_dict[pass_id] = {
-                'train': slice(
-                    df.index[0],
-                    df.index[ window_size_first_pass + p * window_size_increment ]
-                ),
-                'val': slice(
-                    df.index[ window_size_first_pass + p * window_size_increment ],
-                    df.index[ window_size_first_pass + p * window_size_increment + forecasting_window_size ]
-                ),
-            }
-    else:
-        cv_splits_dict = None
-        NotImplementedError(f'CV method not recognized: {cv_method}')
+            pass_id = 'pass ' + str(p + 1)
 
-    return cv_splits_dict
+            train_end_idx = round(window_relsize[p] * len(df_infer))
+
+            cv_splits[pass_id] = {
+                'train': slice(0, train_end_idx),
+                'val': slice(train_end_idx, train_end_idx + size_forecasting_window)
+            }
+        return cv_splits
+
+    else:
+        raise NotImplementedError(f'CV method not recognized: {cv_method}')
 
 
 def train(df: pd.DataFrame,

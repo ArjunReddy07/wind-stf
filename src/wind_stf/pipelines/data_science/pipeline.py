@@ -64,14 +64,14 @@ def create_pipeline(**kwargs):
                 inputs=['params:cv', 'df_infer_scaled'],
                 outputs='splits_positions',
             ),
-            # node(
-            #     func=train,
-            #     name=r'Train',
-            #     inputs=['df_infer_scaled',
-            #             'params:modeling',
-            #             'splits_positions'],
-            #     outputs='model',
-            # ),
+            node(
+                func=train,
+                name=r'Train',
+                inputs=['df_infer_scaled',
+                        'params:modeling',
+                        'splits_positions'],
+                outputs='model',
+            ),
             # # node(
             # #     func=predict,
             # #     name=r'Predict',
