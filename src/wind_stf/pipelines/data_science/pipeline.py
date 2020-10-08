@@ -62,7 +62,7 @@ def create_pipeline(**kwargs):
                 func=define_cvsplits,
                 name=r'Define CV Splits Positions',
                 inputs=['params:cv', 'df_infer_scaled'],
-                outputs='splits_positions',
+                outputs='cv_splits_positions',
             ),
             node(
                 func=train,

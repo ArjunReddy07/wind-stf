@@ -157,9 +157,9 @@ scaler:
   versioned: true
   layer: Model Input
 
-splits_positions:
+cv_splits_positions:
   type: pickle.PickleDataSet
-  filepath: data/05_model_input/splits_positions.pkl
+  filepath: data/05_model_input/cv_splits_positions.pkl
   versioned: true
   layer: Model Input
 

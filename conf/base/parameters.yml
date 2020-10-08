@@ -25,10 +25,10 @@
 
 cv:
     method: expanding window
-    window_size_first_pass: 730
-    window_size_last_pass: 'complete inference window'
+    relsize_shortest_train_window: 0.6  # 1.0 is the inference dataset size
     n_passes: 3
-    forecasting_window_size: 7
+    steps_ahead: 1
+    size_forecast_window: 7
 
 
 modeling:
