@@ -36,12 +36,12 @@ Delete this when you start working on your own Kedro project.
 import logging
 from typing import Any, Dict, List, Tuple
 
-from utils.metrics import metrics
-
 import numpy as np
 import pandas as pd
 from src.utils.preprocessing import registered_transformers, make_pipeline
 from src.utils.modeling import ForecastingModel
+
+from src.utils.metrics import metrics_registered
 
 
 def _sort_col_level(df: pd.DataFrame, levelname:str ='nuts_id'):
@@ -221,9 +221,41 @@ def cv_train(df: pd.DataFrame,
     return model
 
 
-def evaluate(model: Any, cv_splits_positions: Dict[str, Any], df_infer: pd.DataFrame, df_test: pd.DataFrame, scaler: Any) -> Any:
-    scores = None
+def _get_scores(gtruth: Dict[str, Any], preds: Dict[str, Any], avg=True):
+    all_metrics = list( metrics_registered.keys() )
+    all_passes = preds.keys()
+
+    if avg:
+        multioutput = 'uniform_average'
+    else:
+        multioutput = 'raw_values'
+
+    scores = pd.DataFrame(
+        data=None,
+        index=pd.MultiIndex.from_product([all_metrics, ['train', 'val', 'test']]),
+        columns=all_passes
+    )
+    all_passes = list(all_passes) + ['full']
+    for pass_id in all_passes:
+        for cat in ['train', 'val', 'test']:
+            for metric in ['MSE', 'MAE', 'MAPE']:
+                try:
+                    scores.loc[(metric, cat), pass_id] = metrics_registered[metric](
+                        gtruth[pass_id][cat],
+                        preds[pass_id][cat],
+                        multioutput=multioutput
+                    )
+                except:
+                    pass
     return scores
+
+
+def evaluate(model: Any, cv_splits_positions: Dict[str, Any], df_infer: pd.DataFrame, df_test: pd.DataFrame, scaler: Any) -> Any:
+    gtruth, preds = _get_predictions_e_gtruth(model, cv_splits_positions, df_infer, df_test, scaler)
+    scores_nodewise = _get_scores(gtruth, preds, avg=False)
+    scores_averaged = _get_scores(gtruth, preds, avg=True)
+
+    return scores_nodewise, scores_averaged
 
 
 def _get_predictions_e_gtruth(model, cv_splits_positions, df_infer, df_test, scaler):
@@ -234,17 +266,15 @@ def _get_predictions_e_gtruth(model, cv_splits_positions, df_infer, df_test, sca
         gtruth[pass_id] = {}
         preds[pass_id] = {}
         for cat in ['train', 'val']:
-            y = {}
-            yhat = {}
 
             window = df_infer[cv_splits_positions[pass_id][cat]].index
             start = window[0]
             end = window[-1]
 
-            gtruth[pass_id][cat] = df_infer[slice(start, end)]
+            gtruth[pass_id][cat] = df_infer[slice(start, end)][targets]
             preds[pass_id][cat] = model[pass_id].predict(start, end, scaler)
 
-            # model trained on entire inference dataset
+    # predictions for model trained on entire inference dataset
     gtruth['full'] = {}
     preds['full'] = {}
 
@@ -261,7 +291,7 @@ def _get_predictions_e_gtruth(model, cv_splits_positions, df_infer, df_test, sca
         gtruth['full'][cat] = df[slice(start, end)][targets]
         preds['full'][cat] = model['full'].predict(start, end, scaler)
 
-    return preds, gtruth
+    return gtruth, preds
 
 
 

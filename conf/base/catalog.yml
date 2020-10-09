@@ -175,6 +175,17 @@ model_metadata:
   versioned: true
   layer: Models
 
+scores_averaged:
+  type: pickle.PickleDataSet
+  filepath: data/08_reporting/scores_averaged.pkl
+  versioned: false
+  layer: Reporting
+
+scores_nodewise:
+  type: pickle.PickleDataSet
+  filepath: data/08_reporting/scores_nodewise.pkl
+  versioned: false
+  layer: Reporting
 
 scoreboard:
   type: pandas.HDFDataSet
