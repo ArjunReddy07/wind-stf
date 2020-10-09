@@ -10,13 +10,12 @@ class ForecastingModel:
         self.submodels_ = {}
         self.model_ = None
 
-    def fit(self):
-
+    def fit(self, df):
         if self.modeling['mode'] == 'districtwise':
 
             if self.modeling['approach'] == 'HW-ES':
                 for district in self.modeling['targets']:
-                    self.submodels_[district] = ExponentialSmoothing(self.df[district], **self.modeling['hyperpars']).fit()
+                    self.submodels_[district] = ExponentialSmoothing(df[district], **self.modeling['hyperpars']).fit()
 
             return self.submodels_
 
@@ -52,7 +51,6 @@ class ForecastingModel:
             )
 
             df_preds.update(yhat)
-
 
             # y_hat = self.model_.predict(start, end)
             # y_hat_unscaled = scaler.inverse_transform(y_hat)
