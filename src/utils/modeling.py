@@ -44,17 +44,15 @@ class ForecastingModel:
 
             df_preds = pd.DataFrame(
                 data=None,
-                columns=scaler.columns,
+                columns=self.modeling['targets'],
                 index=yhat.index,
             )
 
             df_preds.update(yhat)
 
-            # y_hat = self.model_.predict(start, end)
-            # y_hat_unscaled = scaler.inverse_transform(y_hat)
-            # return y_hat_unscaled
+            yhat_unscaled = scaler.inverse_transform(yhat)
+            return yhat_unscaled[ self.modeling['targets'] ]
 
-            return yhat
 
         elif self.modeling['mode'] == 'spatio-temporal':
             ...

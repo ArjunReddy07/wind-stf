@@ -77,7 +77,6 @@ def create_pipeline(**kwargs):
             #     func=evaluate,
             #     name=r'Evaluate',
             #     inputs=['model',
-            #             'params:modeling',
             #             'cv_splits_positions',
             #             'df_infer',
             #             'df_test',

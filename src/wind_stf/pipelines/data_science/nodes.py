@@ -40,9 +40,8 @@ from utils.metrics import metrics
 
 import numpy as np
 import pandas as pd
-from src.utils.preprocessing import registered_transformers
+from src.utils.preprocessing import registered_transformers, make_pipeline
 from src.utils.modeling import ForecastingModel
-from sklearn.pipeline import make_pipeline
 
 
 def _sort_col_level(df: pd.DataFrame, levelname:str ='nuts_id'):
