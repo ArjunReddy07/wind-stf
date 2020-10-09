@@ -238,7 +238,7 @@ def _get_scores(gtruth: Dict[str, Any], preds: Dict[str, Any], avg=True):
     all_passes = list(all_passes) + ['full']
     for pass_id in all_passes:
         for cat in ['train', 'val', 'test']:
-            for metric in ['MSE', 'MAE', 'MAPE']:
+            for metric in all_metrics:
                 try:
                     scores.loc[(metric, cat), pass_id] = metrics_registered[metric](
                         gtruth[pass_id][cat],

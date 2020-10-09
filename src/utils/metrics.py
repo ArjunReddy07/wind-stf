@@ -3,19 +3,8 @@ from sklearn.utils.validation import check_consistent_length
 import numpy as np
 
 
-def rmse(y, y_hat):
-    return mean_squared_error(y, y_hat, multioutput='raw_values') ** 0.5
-
-
-def mae(y, y_hat):
-    return mean_absolute_error(y, y_hat, multioutput='raw_values')
-
-
-metrics = {
-    'rmse': rmse,
-    'mae': mae,
-}
-
+def root_mean_squared_error(y_true, y_pred, multioutput='uniform_average'):
+    return mean_squared_error(y_true, y_pred, multioutput=multioutput) ** 0.5
 
 
 def mean_absolute_percentage_error(y_true, y_pred,
@@ -23,7 +12,7 @@ def mean_absolute_percentage_error(y_true, y_pred,
                                    multioutput='uniform_average'):
     check_consistent_length(y_true, y_pred, sample_weight)
     epsilon = np.finfo(np.float64).eps
-    mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
+    mape = 100 * np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
     output_errors = np.average(mape, weights=sample_weight, axis=0)
     if isinstance(multioutput, str):
         if multioutput == 'raw_values':
@@ -37,6 +26,6 @@ def mean_absolute_percentage_error(y_true, y_pred,
 
 metrics_registered = {
     'MAE': mean_absolute_error,
-    'MSE': mean_squared_error,
+    'RMSE': root_mean_squared_error,
     'MAPE': mean_absolute_percentage_error
 }
