@@ -1,36 +1,43 @@
-class ForecastingModel:
-    def __init__(self, y_train, modeling, mode, inference, hyperpars):
-        self.hyperpars = modeling
-        self.y_train = y_train
+from typing import Dict, Any
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
-        self.targets = self.hyperpars['targets']
-        if self.targets == 'all_available':
-            self.targets = y_train.columns
+
+class ForecastingModel:
+    def __init__(self, df, modeling: Dict[str, Any]):
+        self.modeling = modeling
+        self.df = df
+        self.targets = df.columns
+        self.submodels_ = {}
+        self.model_ = None
 
     def fit(self):
 
-        if self.modeling['mode'] == 'temporal':  # i.e. districtwise
-            self.submodels_ = {
-                district:
-                    ForecastingModel(
-                        self.y_train['temporal'][district],
-                        hyperpars=self.modeling['inference']
-                    ).fit() for district in self.targets
-            }
+        if self.modeling['mode'] == 'districtwise':
+
+            if self.modeling['approach'] == 'HW-ES':
+                self.submodels_ = {
+                    district: ExponentialSmoothing(self.df[district], **self.modeling['hyperpars'])
+                    for district in self.targets
+                }
+                return self.submodels_
 
         elif self.modeling['mode'] == 'spatio-temporal':  # i.e. all districts at once
 
-            if self.modeling['inference']['approach'] == 'RNN-ES':
+            if self.modeling['approach'] == 'RNN-ES':
                 self.model_ = None
 
-            elif self.modeling['inference']['approach'] == 'GWNet':
+            elif self.modeling['approach'] == 'GWNet':
                 self.model_ = None
+
+            return self.model_
 
         else:
             return NotImplementedError('')
-        return self
 
-    def predict(self, start, end, transformer):
+    def predict(self, start, end, scaler):
         y_hat = self.model_.predict(start, end)
-        y_hat_unscaled = transformer.inverse_transform(y_hat)
+        y_hat_unscaled = scaler.inverse_transform(y_hat)
         return y_hat_unscaled
+
+
+

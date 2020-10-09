@@ -66,10 +66,10 @@ def create_pipeline(**kwargs):
             ),
             node(
                 func=train,
-                name=r'Train',
+                name=r'CV Train',
                 inputs=['df_infer_scaled',
                         'params:modeling',
-                        'splits_positions'],
+                        'cv_splits_positions'],
                 outputs='model',
             ),
             # # node(

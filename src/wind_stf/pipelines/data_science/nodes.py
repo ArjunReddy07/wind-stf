@@ -212,18 +212,12 @@ def train(df: pd.DataFrame,
     df = df[targets]
 
     for pass_id in splits_positions.keys():
+        model[pass_id] = ForecastingModel(
+            df[ splits_positions[pass_id]['train'] ],
+            modeling
+        ).fit()
 
-        # splitting
-        y = _split_train_eval(df, splits_positions['train'])  # cv_splits_dict[pass_id]
-
-        # training
-        model[pass_id] = ForecastingModel(y['train'], modeling).fit()
-
-    longest_pass_id = pass_id
-    return {
-        'intermediate_models': model,
-        'model': model[longest_pass_id]
-    }
+    return model
 
 
 def _predict(model_metadata: Any, forecasting_idx, targets: list) -> Dict[str, np.ndarray]:

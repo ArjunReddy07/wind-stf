@@ -163,10 +163,9 @@ cv_splits_positions:
   versioned: true
   layer: Model Input
 
-model_params:
-  type: pandas.HDFDataSet
-  filepath: data/06_models/model.h5
-  key: model_params
+model:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/model.pkl
   versioned: true
   layer: Models
 
