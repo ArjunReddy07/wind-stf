@@ -143,9 +143,9 @@ def scale(df_infer: pd.DataFrame, modeling: List[str]) -> List[Any]:
 
     # transformation output is a numpy array
     df_infer_scaled = pd.DataFrame(
+        data=scaler.transform(df_infer),
         index=df_infer.index,
         columns=df_infer.columns,
-        data=scaler.transform( df_infer )
     )
 
     return [df_infer_scaled, scaler]

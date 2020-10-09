@@ -47,7 +47,7 @@ class ForecastingModel:
 
             df_preds = pd.DataFrame(
                 data=None,
-                columns=df_infer_scaled.columns,
+                columns=scaler.columns,
                 index=yhat.index,
             )
 
