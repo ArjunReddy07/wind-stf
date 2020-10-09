@@ -1,12 +1,12 @@
 from typing import Dict, Any
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
+import pandas as pd
 
 
 class ForecastingModel:
-    def __init__(self, df, modeling: Dict[str, Any]):
+    def __init__(self, modeling: Dict[str, Any]):
         self.modeling = modeling
-        self.df = df
-        self.targets = df.columns
+
         self.submodels_ = {}
         self.model_ = None
 
@@ -15,11 +15,10 @@ class ForecastingModel:
         if self.modeling['mode'] == 'districtwise':
 
             if self.modeling['approach'] == 'HW-ES':
-                self.submodels_ = {
-                    district: ExponentialSmoothing(self.df[district], **self.modeling['hyperpars'])
-                    for district in self.targets
-                }
-                return self.submodels_
+                for district in self.modeling['targets']:
+                    self.submodels_[district] = ExponentialSmoothing(self.df[district], **self.modeling['hyperpars']).fit()
+
+            return self.submodels_
 
         elif self.modeling['mode'] == 'spatio-temporal':  # i.e. all districts at once
 
@@ -35,9 +34,39 @@ class ForecastingModel:
             return NotImplementedError('')
 
     def predict(self, start, end, scaler):
-        y_hat = self.model_.predict(start, end)
-        y_hat_unscaled = scaler.inverse_transform(y_hat)
-        return y_hat_unscaled
+
+        if self.modeling['mode'] == 'districtwise':
+            yhat = {}
+            for district in self.modeling['targets']:
+                yhat[district] = self.submodels_[district].predict(
+                    start=start,
+                    end=end
+                )
+
+            yhat = pd.DataFrame(yhat)
+
+            df_preds = pd.DataFrame(
+                data=None,
+                columns=df_infer_scaled.columns,
+                index=yhat.index,
+            )
+
+            df_preds.update(yhat)
+
+
+            # y_hat = self.model_.predict(start, end)
+            # y_hat_unscaled = scaler.inverse_transform(y_hat)
+            # return y_hat_unscaled
+
+            return yhat
+
+        elif self.modeling['mode'] == 'spatio-temporal':
+            ...
+
+        else:
+            return NotImplementedError('')
+
+
 
 
 

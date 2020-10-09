@@ -211,9 +211,16 @@ def train(df: pd.DataFrame,
     targets = modeling['targets']
     df = df[targets]
 
+    # train for every cv split
     for pass_id in splits_positions.keys():
         model[pass_id] = ForecastingModel(
             df[ splits_positions[pass_id]['train'] ],
+            modeling
+        ).fit()
+
+    # train model on whole inference dataset
+    model['full'] = ForecastingModel(
+            df,
             modeling
         ).fit()
 

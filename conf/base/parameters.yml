@@ -46,7 +46,7 @@ modeling:
   hyperpars:
       trend: additive
       seasonal: multiplicative
-      seasonal_periods: 365
+      seasonal_periods: 7
   targets:
       - DEF0C
       - DE111
