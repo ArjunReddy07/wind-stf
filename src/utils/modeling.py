@@ -17,8 +17,6 @@ class ForecastingModel:
                 for district in self.modeling['targets']:
                     self.submodels_[district] = ExponentialSmoothing(df[district], **self.modeling['hyperpars']).fit()
 
-            return self.submodels_
-
         elif self.modeling['mode'] == 'spatio-temporal':  # i.e. all districts at once
 
             if self.modeling['approach'] == 'RNN-ES':
@@ -27,10 +25,10 @@ class ForecastingModel:
             elif self.modeling['approach'] == 'GWNet':
                 self.model_ = None
 
-            return self.model_
-
         else:
-            return NotImplementedError('')
+            raise NotImplementedError('')
+
+        return self
 
     def predict(self, start, end, scaler):
 

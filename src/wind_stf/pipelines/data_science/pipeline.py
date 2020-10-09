@@ -38,7 +38,8 @@ from .nodes import (
     split_modinfer_test,
     define_cvsplits,
     scale,
-    train,
+    cv_train,
+    evaluate,
     report_scores,
 )
 
@@ -65,21 +66,26 @@ def create_pipeline(**kwargs):
                 outputs='cv_splits_positions',
             ),
             node(
-                func=train,
+                func=cv_train,
                 name=r'CV Train',
                 inputs=['df_infer_scaled',
                         'params:modeling',
                         'cv_splits_positions'],
                 outputs='model',
             ),
-            # # node(
-            # #     func=predict,
-            # #     name=r'Predict',
-            # #     inputs=['df_spatiotemporal', 'cv_splits_dict', 'transformation_parameters'],
-            # #     outputs=['train_y_hat', 'test_y_hat'],
-            # # ),
             # node(
-            #     func=report_scores,
+            #     func=evaluate,
+            #     name=r'Evaluate',
+            #     inputs=['model',
+            #             'params:modeling',
+            #             'cv_splits_positions',
+            #             'df_infer',
+            #             'df_test',
+            #             'scaler'],
+            #     outputs='scores',
+            # ),
+            # node(
+            #     func=update_scoreboard,
             #     name=r'Report Scores',
             #     inputs=['scoreboard', 'model_metadata', 'cv_splits_dict'],
             #     outputs=None,  # updates scoreboard

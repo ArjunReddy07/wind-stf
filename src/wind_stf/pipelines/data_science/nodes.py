@@ -202,9 +202,9 @@ def define_cvsplits(cv_params: Dict[str, Any], df_infer: pd.DataFrame) -> Dict[s
         raise NotImplementedError(f'CV method not recognized: {cv_method}')
 
 
-def train(df: pd.DataFrame,
-          modeling: Dict[str, Any],
-          splits_positions: Dict[str, Any]) -> Dict[str, Any]:
+def cv_train(df: pd.DataFrame,
+             modeling: Dict[str, Any],
+             splits_positions: Dict[str, Any]) -> Dict[str, Any]:
     model = {}
 
     # ignore all vars we don't want to model
@@ -220,6 +220,11 @@ def train(df: pd.DataFrame,
     model['full'] = ForecastingModel(modeling).fit(df)
 
     return model
+
+
+def evaluate(model: Any, cv_splits_positions: Dict[str, Any], df_infer: pd.DataFrame, df_test: pd.DataFrame, scaler: Any) -> Any:
+    scores = None
+    return scores
 
 
 def _predict(model_metadata: Any, forecasting_idx, targets: list) -> Dict[str, np.ndarray]:
@@ -255,9 +260,6 @@ def _predict(model_metadata: Any, forecasting_idx, targets: list) -> Dict[str, n
     # }
     pass
 
-
-def _unscale_predictions(model_metadata: Any):
-    pass
 
 
 def _convert_CFtokW():
