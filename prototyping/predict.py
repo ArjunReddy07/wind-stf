@@ -63,6 +63,6 @@ if __name__ == '__main__':
     end = df.index[-1]
 
     # predict
-    model['full'].predict(start, end, scaler)
+    print( model['full'].predict(start, end, scaler) )
 
     print('done!')

@@ -226,38 +226,42 @@ def evaluate(model: Any, cv_splits_positions: Dict[str, Any], df_infer: pd.DataF
     return scores
 
 
-def _predict(model_metadata: Any, forecasting_idx, targets: list) -> Dict[str, np.ndarray]:
-    # model = _load_model(model_metadata)
-    #
-    # test_idx = cv_splits_dict['y_train']
-    #
-    # pred = {}
-    # pred_scaled = {}
-    #
-    # for pass_id in cv_splits_dict.keys():
-    #
-    #     pred_scaled[pass_id] = {}
-    #
-    #     for district in tss_scaled.columns:
-    #         # prediction
-    #         pred_scaled[pass_id][district] = model[pass_id][district].predict(
-    #             start=test_idx[0],
-    #             end=test_idx[-1]
-    #         )
-    #
-    #     # postprocessing prediction
-    #     pred[pass_id] = pd.DataFrame(
-    #         data=quantile_transformer.inverse_transform(
-    #             pd.DataFrame(pred_scaled[pass_id]) - 10
-    #         ),
-    #         columns=tss_scaled.columns,
-    #         index=test_idx,
-    #     )
-    #
-    # return {
-    #     'y_hat': None,
-    # }
-    pass
+def _get_predictions_e_gtruth(model, cv_splits_positions, df_infer, df_test, scaler):
+    gtruth = {}
+    preds = {}
+    targets = model['full'].modeling['targets']
+    for pass_id in cv_splits_positions.keys():
+        gtruth[pass_id] = {}
+        preds[pass_id] = {}
+        for cat in ['train', 'val']:
+            y = {}
+            yhat = {}
+
+            window = df_infer[cv_splits_positions[pass_id][cat]].index
+            start = window[0]
+            end = window[-1]
+
+            gtruth[pass_id][cat] = df_infer[slice(start, end)]
+            preds[pass_id][cat] = model[pass_id].predict(start, end, scaler)
+
+            # model trained on entire inference dataset
+    gtruth['full'] = {}
+    preds['full'] = {}
+
+    for cat in ['train', 'test']:
+
+        if cat == 'train':
+            df = df_infer
+        else:
+            df = df_test
+
+        start = df.index[0]
+        end = df.index[-1]
+
+        gtruth['full'][cat] = df[slice(start, end)][targets]
+        preds['full'][cat] = model['full'].predict(start, end, scaler)
+
+    return preds, gtruth
 
 
 
