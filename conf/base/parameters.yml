@@ -49,7 +49,10 @@ modeling:
       seasonal_periods: 7
   targets:
       - DEF0C
-      - DE111
+      - DEF07
+      - DEF0B
+      - DEF05
+      - DEF0E
 
 
 evaluation:

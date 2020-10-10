@@ -178,13 +178,13 @@ model_metadata:
 scores_averaged:
   type: pickle.PickleDataSet
   filepath: data/08_reporting/scores_averaged.pkl
-  versioned: false
+  versioned: true
   layer: Reporting
 
 scores_nodewise:
   type: pickle.PickleDataSet
   filepath: data/08_reporting/scores_nodewise.pkl
-  versioned: false
+  versioned: true
   layer: Reporting
 
 scoreboard:
