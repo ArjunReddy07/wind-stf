@@ -100,5 +100,77 @@ Below, we summarize the main consequences this analysis had to our design decisi
 
 # Pipeline
 
+We developed a pipeline  (\ref{fig:project-pipeline} comprising (1) a data engineering pipeline, and (2) a data science pipeline). 
+
+## Data Engineering Pipeline
+
+The data engineering pipeline (\ref{fig:de-pipeline}) encompasses all the data processing steps involved between (a) measurements and sensors datasets and (b) daily capacity factors, sensors graph inputs.
+
+%TODO: figure
+
+**Get Capacity Installed Time Series.** We load the sensors dataset and build a time series for the capacity installed in every district, essentially by grouping  turbine entries by district, and performing a cumulated sum of power ratings over the commissioning date-sorted entries. 
+
+**Get Power Centroids.** A centroid position is defined for every district, not by its baricenter, but from the rated power-weighted average of all its single turbines coordinates. In practice, the power centroid changes its position every time  a new turbine is commissioned. We neglect this variation over time, and take the resulting average as sufficiently accurate for its purpose. Namely, we use the power centroids for calculating representative Euclidean distances between districts, which we used for the EDA and also when calculating the adjacency matrix initialization values for the graph-based spatio-temporal forecasting methods.
+
+**Concatenate and Downsample.** We concatenate the measurements dataset (power generated districtwise, in $kW$), which is provided for every year, into a single hourly dataframe, then downsample it into a daily measurements by summing same-day entries.
+
+**Filter Districts.**  We filter out previously determined districts  which either represent outliers in spatial correlogram (3 from 303) or have zero installed capacity by 2015-01-01 (4 from 303). Also, districts in which by 2000-01-01 a single turbine represents more than 50\% of its installed capacity (18 districts in total). Although the latter measure might represent a deviation from the industry use case, we perform it in favor of metrics representativity, as otherwise models overall performance metrics would be biased by low predictibility of ill-conditioned time series e.g. from districts where wind harvesting are still in early phases.  
+
+**Transform kW to CF.** Every entry in measurements time series dataset is normalized by the corresponding local installed capacity at the same day. This results in daily time series for capacity factors in every district.
+
+## Data Science Pipeline
+
+This section of the project pipeline processes (a) user-defined parameters, (b) the capacity factors dataset resulting from the data engineering pipeline and, when required, also (c) the power centroids. 
+
+**Get Initial Adjacency Matrix.** We calculate the matrix of the pairwise Euclidean distances and transform it into an adjacency matrix. For initializing the values of the (constant) adjacency matrix in DCRNN or the self-adaptive adjacency matrix in the Graph WaveNet case, we apply the Gaussian distance function on every entry of the distances matrix (also used in \cite{DCRNN, GWNet}), so that $A_{ij} = exp(-D_{ij}/\sigma_{D})$, where $\sigma_{D}$ is the standard deviation of the distances matrix. Also as in \cite{DCRNN}, we promote sparsity in the adjacency matrix for computational efficiency by thresholding the entries in the adjacency matrix. However, instead of defining an arbitrary threshold value for $A_{ij}$, we prune adjacency values when the distances they are calculated from surpasses the decorrelation distance of 150 km. This node function is only processed in experiments with DCRNN and Graph WaveNet, as they are the only methods considered which rely on an adjacency matrix.
+
+**Split Inference-Test Data.** We split the capacity factors measurements dataset into a model inference dataset, used for training and model selection, and a test dataset, reserved for the model performance evaluation. The split is done according to the user-defined date ranges defined for each partition.
+
+**Scale.** We apply the user-defined sequence of scaling and offsetting methods on the inference data. 
+
+**Define CV Splits Positions.** Date ranges for defining respectively the training and the validation datasets are determined, the validation window always positioned on dates later than training window last entry. User-defined entries for this function include the cross-validation type and the pertaining parameters. For expanding window CV, the parameters are the relative size of the shortest train window (0.0 - 1.0 proportion of model inference dataset size), the number of total CV passes, the number of steps ahead, and the forecast window size.
+
+**CV Train.** Trains a model for every CV split as well as one for the entire scaled model inference dataset. In the case of single time series-modeling methods such as Holt-Winters Exponential Smoothing, the resulting model is actually a simple collection of single time series submodels.
+
+**Evaluate.** Makes predictions using every trained model in the experiment and calculate overall model performance metrics.  
+
+# Experiments
+
+Currently, all forecasting approaches are evaluated on a reduced case consisting of (a) 5 districts on northern Germany (DEF0C, DEF07, DEF0B, DEF05, DEF0E) located within 80 km distance from one another, (b) model inference time window from 2013-01-01 to 2015-06-22 and test time window from 2015-06-23 to 2015-06-29. We chose the test time window to be in a year period known to be less susceptible to wind gusts and other weather anomalies. Both models were evaluated in terms of predictions in capacity factors, with cross-districts uniform average of metrics. With regards of model tuning, only manual procedure has been carried out.   
+
+**HW-ES.** For preprocessing, relies on quantile transformation into a normal distribution, followed by an offsetting by the absolute value of the minimum of every scaled time series. The latter step is performed to ensure model inputs are strictly positive so as to allow for multiplicative seasonal approach in the HW-ES method. As for hyperparameters, we use additive trend, multiplicative seasonal, seasonal period of 7 steps (days). 
+
+**Graph WaveNet.** For preprocessing, relies on a Z-standard scaling. As for hyperparameters, we define most importantly the number of nodes (5), the sequence length (12), the learning rate (1E-3), and the learning decay rate (0.97).
+
+# Results & Discussion
+
+Table \ref{tab:performances} summarizes the models performances, according to cross-district uniform averages of metrics.
+For the reduced case, the spatio-temporal approach GWNet generally outperforms the purely temporal approach HW-ES.
+We expect this difference to grow even larger in a larger-scale study case including more districts, as the GWNet approach can make use of more inter-time series correlations.
+
+```TeX
+\begin{table}[]
+\begin{tabular}{l|cc}
+     & HW-ES  & GWNet  \\ \hline
+MAE  & 0.182  & 0.091  \\
+RMSE & 0.116  & 0.231  \\
+MAPE & 41.4\% & 1.78\%
+\end{tabular}
+\end{table}
+```
+
+# Conclusion & Next Steps
+
+Accounting for cross-time series dependencies seems to indeed improve model accuracy, although only a reduced case has been carried out so far. 
+
+Besides expanding the use case to the other districts and its training time window up to, we are reassessing the plausibility of the model evaluation period (currently a fixed week) and metrics.
+We intend to reassess model performance in terms of predictions in power generation in kW, and to make a separate model evaluation with metrics more appropriate for the specific use case of renewables power generation.
+
+With regards to the contributions of this work, we invested a significant proportion of effort to follow good practices and data science development standards, so as to ensure reproducibility of results as well as reusability of methods and tools. 
+
+
+
+
+
 
 
