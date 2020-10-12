@@ -24,9 +24,9 @@
 \contentsline {section}{\numberline {3.4}Consequences for the data pipeline design}{40}{section.3.4}%
 \contentsline {chapter}{\numberline {4}Data Pipeline}{43}{chapter.4}%
 \contentsline {section}{\numberline {4.1}Data Engineering Pipeline}{44}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Data Science Pipeline}{45}{section.4.2}%
-\contentsline {chapter}{\numberline {5}Experiments Settings}{47}{chapter.5}%
-\contentsline {chapter}{\numberline {6}Results}{49}{chapter.6}%
-\contentsline {chapter}{\numberline {7}Conclusion and Next Steps}{51}{chapter.7}%
-\contentsline {chapter}{Bibliography}{53}{section*.30}%
-\contentsline {chapter}{\numberline {A}Extra Information}{57}{appendix.A}%
+\contentsline {section}{\numberline {4.2}Data Science Pipeline}{46}{section.4.2}%
+\contentsline {chapter}{\numberline {5}Experiments Settings}{49}{chapter.5}%
+\contentsline {chapter}{\numberline {6}Results}{51}{chapter.6}%
+\contentsline {chapter}{\numberline {7}Conclusion and Next Steps}{53}{chapter.7}%
+\contentsline {chapter}{Bibliography}{55}{section*.31}%
+\contentsline {chapter}{\numberline {A}Extra Information}{59}{appendix.A}%
