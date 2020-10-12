@@ -1,0 +1,22 @@
+\chapter{Results}
+
+Table \ref{tab:performances} summarizes the models performances, according to cross-district uniform averages of metrics.
+For the reduced case, the spatio-temporal approach GWNet generally outperforms the purely temporal approach HW-ES.
+In a larger-scale study case including more districts, we expect the gap between the models to increase, as GWNet can make use of more inter-time series correlations.
+The current very limited reduced case does not allow us to draw definite conclusions on approaches capabilities beyond this, so further comparisons on larger-scales cases are necessary.
+
+\begin{table}[H]
+    \centering
+    \caption{Performance comparison of different approaches for wind power generation in reduced case.}
+    \label{tab:performances}
+\begin{tabular}{l|cc}
+
+\hline
+\textbf{Metric} & \textbf{HW-ES} & \textbf{GWNet} \\ \hline
+MAE             & 0.182          & \textbf{0.091}          \\
+RMSE            & \textbf{0.116}          & 0.131          \\
+MAPE            & 45.4\%         & \textbf{1.78}\%         \\ \hline
+\end{tabular}
+\end{table}
+
+

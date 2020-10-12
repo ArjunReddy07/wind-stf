@@ -1,30 +1,5 @@
-#cross_validation:
-#  method: expanding window
-#  window_size_first_pass: 730
-#  window_size_last_pass: 910
-#  n_passes: 3
-#  forecasting_window_size: 7
-
-
-# modeling:
-#  mode: temporal
-#  approach: HW-ES
-#  hyperpars:
-#    trend: additive
-#    seasonal: multiplicative
-#    seasonal_periods: 365
-#  targets:
-#    - DEF0C
-#    - DE111
-#
-#
-#evaluation:
-#  - MAE
-#  - RMSE
-
-
 cv:
-    method: expanding window
+    scheme: expanding window
     relsize_shortest_train_window: 0.6  # 1.0 is the inference dataset size
     n_passes: 3
     steps_ahead: 1

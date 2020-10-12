@@ -14,8 +14,6 @@ The sensors dataset (\ref{table:sensors-dataset}) reports individual turbines de
 
 Both datasets were compiled and prepared by authors in \cite{}, most importantly by imputing missing entries (about 15\% in the measurements dataset, 8\% in the sensors dataset) via machine learning-based methods. We summarize their main characteristics in table \ref[table].
 
-% TODO: add to dataset summary: primary key, foreign key, quantity is kW 
-
 # Exploratory Data Analysis 
 
 We carried out an exploratory data analysis on both datasets to better understand their generation process, as well as to identify data patterns and limitations.
@@ -45,7 +43,7 @@ Furthermore, we would expect this effect to be more pronounced for longer foreca
 
 <div class="sl-block is-focused" data-block-type="image" style="width: 1612.8px; height: 331.665px; left: 147.2px; top: 340.451px; min-width: 1px; min-height: 1px;" data-name="image-d0981e" data-origin-id="7f528c326e07deb5d10f76a18c7f22fd"><div class="sl-block-content" style="z-index: 14;"><img style="" data-natural-width="2480" data-natural-height="510" data-lazy-loaded="" src="https://s3.amazonaws.com/media-p.slid.es/uploads/1280418/images/7525976/wpg-daily-typical-ts_20200701_155716_fav.png"></div></div>
 
-One way to overcome this would be to provide to the models an exogenous feature which informed it about new commissioning ahead.
+One way to address this would be to provide to the models an exogenous feature which informed it about new commissioning ahead.
 Not every forecasting approach supports this, however, as in the case of historical average or single-input ARIMA variants.
 This would thus limit the comparability of methods performance.
 
